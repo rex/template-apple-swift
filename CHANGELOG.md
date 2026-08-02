@@ -35,6 +35,21 @@ version bumps).
 
 ---
 
+## [0.1.1] — 2026-08-02 — Agent: Claude
+
+### Fixed
+- ci-shell gates at `shellcheck -S warning` — info/style notes (e.g. SC2015 in
+  the skeleton-verbatim `auto-lint.sh`) are review signal, not build failures.
+- Repaired the ci-shell recipe after comment lines broke its continuation
+  chain ("No files specified").
+
+### Changed
+- Wave-2 integration gate: junction includes ratified, `pre-compact-apple.sh`
+  rename, `check-no-serena` ci-linux guard, `Versions.xcconfig` untracked,
+  spinner corpus materialized (194 verbs + 37 tips), `APPLE_ID_AUTH`
+  capability fix, VIBE excludes for template machinery.
+
+
 ## [0.1.0] — 2026-08-02 — Agent: Claude
 ### Added
 - Superset Apple app: iOS, macOS and watchOS app targets plus home widgets,
