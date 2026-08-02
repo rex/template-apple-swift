@@ -22,19 +22,40 @@ documented source — credentials sitting in a dotfile.
    anywhere in this template or its generated output. The skeleton's
    serena-related files are simply not copied; `/sync-skills` runs must not
    reintroduce them (documented in the template's sync notes).
-2. **MCP secrets come from 1Password at boot or the server is omitted.**
-   The GitHub MCP server ships only if its token injects via 1Password CLI
-   (`op run` / `op read` against Pierce's `agentic` vault) at server-boot time;
-   context7 ships with no API-key argument (keyless mode) unless op-injected.
-   No `${ENV_VAR}` secret expansion for tokens in the committed `.mcp.json`.
-   Graceful degradation when `op` is absent (remote containers): the wrapper
-   no-ops the optional server rather than breaking MCP boot. Exact wrapper
-   mechanics per research R3.
+2. **MCP secrets come from 1Password at connect time via `headersHelper`, and
+   every server degrades to a working credential-free mode.**
+   `github` and `context7` are configured as **remote HTTP** servers
+   (`https://api.githubcopilot.com/mcp/`, `https://mcp.context7.com/mcp`).
+   Both use one `headersHelper` script, `scripts/mcp/op-headers.sh`, which
+   resolves a PAT/API key with `op read` against Pierce's `agentic` vault.
+   The script's contract is **always exit 0, always print one JSON object**;
+   it prints `{}` when `op` is missing, locked, or offline, having written a
+   one-line reason to stderr. `{}` sends no `Authorization` header, so github
+   falls through to Claude Code's own OAuth flow (`/mcp`,
+   `claude mcp login github`) and context7 falls through to its anonymous
+   tier — both remain usable. No `${ENV_VAR}` expansion for tokens, and no
+   credential ever appears in `args` (a command line is world-readable via
+   `ps`). `sequential-thinking` is stdio and needs no credential.
+   Servers are **never omitted**; a credential-less server degrades in place,
+   and Claude Code reports its state to the agent by name. Wrapper text and
+   the verified degradation matrix: `specs/_build/research/R3-mcp.md` §V5.
+   Graceful degradation applies when `op` is absent, locked, or lacks vault
+   access — the real distinction is service-account (headless-capable) vs
+   desktop-biometric (interactive) auth, not Mac vs container (R3 verified
+   this remote container HAS an authed `op` service account scoped to
+   `agentic`).
 
 ## Consequences
 
 - Agents in generated repos use built-in tools; no symbolic-edit gate exists.
-- Sessions without 1Password lose the GitHub MCP server (GitHub access then
-  flows through the platform's own integration, e.g. remote-session MCP).
+- Sessions without 1Password do **not** lose the GitHub MCP server: it stays
+  configured and Claude Code surfaces it as `! Needs authentication`, offering
+  OAuth sign-in via `/mcp` or `claude mcp login github`. In a non-interactive
+  run Claude Code names the server as needing authorization rather than acting
+  as if it were unconfigured. Only the *credential source* changes.
+- `headersHelper` and project-scoped `.mcp.json` approvals both require the
+  workspace trust dialog, which a committed `enableAllProjectMcpServers`
+  cannot pre-satisfy in a freshly cloned repo. Generated-repo onboarding must
+  include one interactive `claude` run to accept trust and approve servers.
 - The skeleton-wide Serena removal remains Pierce's separate effort; this repo
   is the Serena-free reference implementation.

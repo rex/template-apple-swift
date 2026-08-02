@@ -47,11 +47,11 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "ios": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
-        "macos": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
-        "watchos": { "type": "string", "pattern": "^\\d+\\.\\d+$" }
+        "ios": { "type": "string", "pattern": "^\\d+\\.\\d+$", "default": "18.0" },
+        "macos": { "type": "string", "pattern": "^\\d+\\.\\d+$", "default": "15.0" },
+        "watchos": { "type": "string", "pattern": "^\\d+\\.\\d+$", "default": "11.0" }
       },
-      "description": "Floors; defaults injected from R2 verdict at W2A finalization"
+      "description": "Floors; R2-verified Aug-2026 defaults form one Sept-2024 OS cohort (generator warns on mixed cohorts); documented 'modern' preset = 26.0/26.0/26.0"
     },
     "ops": {
       "type": "object",
@@ -59,6 +59,9 @@
       "properties": {
         "ci_system": { "enum": ["xcode_cloud", "github_actions", "none"], "default": "xcode_cloud" },
         "signing": { "enum": ["automatic", "match"], "default": "automatic" },
+        "frameit": { "type": "boolean", "default": false, "description": "frameit needs ImageMagick + community frames" },
+        "spinner_flavor": { "type": "boolean", "default": true, "description": "write spinnerVerbs + spinnerTipsOverride into .claude/settings.json" },
+        "statusline": { "type": "boolean", "default": false, "description": "wire .claude/statusline.sh (a project statusLine replaces a personal one — opt in)" },
         "autonomy": { "enum": ["continue-until-blocked", "interactive"], "default": "continue-until-blocked" },
         "squash_history": { "type": "boolean", "default": false }
       }

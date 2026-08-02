@@ -44,5 +44,10 @@ versions live as YAML literals.
   blocks, edit plists via plistlib, substitute tokens — no YAML surgery.
 - The committed superset (all includes present) is exactly what verify-macos
   builds; combos differ only by deleted files.
-- If R2 finds include merging insufficient for dependency edges, only the
-  tagged-line contingency activates; the ADR stands.
+- **R2 verified include merging at source (XcodeGen 2.46.0): arrays
+  concatenate, dicts recurse, root wins scalars. The tagged-line contingency
+  is withdrawn.** Two constraints were discovered and are now part of the
+  design: every `include:` uses the object form with `relativePaths: false`
+  (the default `true` re-roots all paths at the component file's directory),
+  and `options.bundleIdPrefix` is *not* used (it would auto-generate wrong,
+  plausible extension bundle IDs — ITMS-90347).

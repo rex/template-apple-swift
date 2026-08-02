@@ -49,3 +49,13 @@ answers rather than silent gaps.
   read as canon — it must exemplify the north star (Swift 6 strict concurrency,
   @Observable, Theme tokens, String Catalogs, Swift Testing).
 - HealthKit module is iOS-only in v1 (watch workout support deferred).
+- Pennywise is a Swift **5.10** codebase on every target. It is the reference
+  for API shape, target/entitlement/plist wiring and product behaviour —
+  **not** for Swift 6 concurrency. Three of its patterns (WCSession delegate
+  hops, `static var` App Intent metadata, unannotated `TimelineProvider`
+  structs) are compile errors under our settings. (R4 V1)
+- **The Mac app has NO menu-bar surface in v1** (R2: Pennywise's macOS-26
+  MenuBarExtra `setImage:` recursion has no public trace/fix; rather than ship
+  either the risky SwiftUI API or the AppKit workaround as canon, v1 ships a
+  main-window Mac app only). `docs/template-guide.md` carries the hazard note
+  pointing at Pennywise's manual-`NSStatusItem` pattern for apps that need one.

@@ -31,6 +31,26 @@ namespace defaults `runner_pattern: docker`, which cannot host Xcode.
 - All workflows SHA-pin third-party actions and expose `workflow_dispatch`
   (tool-ci hard rules).
 
+## Runner specifics (R2-verified 2026-08-02)
+
+- `verify-macos.yml` runs on **`macos-26`** (arm64; `macos-latest` since June
+  2026). `macos-14` is fully unsupported after 2026-11-02; `macos-15`/
+  `macos-15-intel` are legacy-only. Xcode is pinned with
+  `sudo xcode-select -s /Applications/Xcode_26.6.app` — a plain shell step, so
+  no third-party action needs SHA-pinning for this.
+- The image preinstalls Xcode 26.0.1 → 26.6 (26.6 default), fastlane 2.237.0
+  and SwiftFormat 0.62.1. It does **not** preinstall `xcodegen` or
+  `swiftlint`; the workflow runs `brew install xcodegen xcbeautify` and
+  `bundle install` against the committed `Gemfile.lock`.
+- **Simulator names are image-version-coupled and must not be hardcoded
+  blindly.** `iPhone 15` and `Apple Watch Series 9 (45mm)` do not exist on this
+  image. Defaults: `DEVICE ?= iPhone 17`,
+  `WATCH_DEVICE ?= Apple Watch Series 11 (46mm)`. `make build*` uses
+  `-destination 'generic/platform=iOS Simulator'` (no device needed for a
+  build); only `test`/`ui-test` name a device, resolved through
+  `scripts/apple/pick-simulator.sh` (`xcrun simctl list devices available
+  --json`, newest-iPhone fallback) with the Make var as an override.
+
 ## Consequences
 
 - Compile regressions can land on the branch between macOS runs; the tag gate

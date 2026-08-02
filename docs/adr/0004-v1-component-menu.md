@@ -30,3 +30,9 @@ are frozen in `template/components.yaml`.
 - `store` and `account` are new ground not proven by Pennywise — they ship as
   deliberately minimal stubs exercising the real APIs, verified by the macOS
   compile matrix.
+- The `store` stub is API-driven (`Product.products` / `purchase` /
+  `Transaction.updates` / `Transaction.currentEntitlements`), not
+  `SubscriptionStoreView`. SwiftUI's merchandising views need a real App Store
+  Connect subscription group and render a failure state against the template's
+  placeholder identifiers; they are documented as the production upgrade path.
+  (R4 V16)

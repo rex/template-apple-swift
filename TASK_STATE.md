@@ -19,12 +19,17 @@ ownership: `specs/_build/file-ownership.md`.
 
 - [x] S0 — Groundwork: contracts, ownership map, ADRs 0001–0009, component
       registry skeleton, answers schema draft, TASK_STATE. (Fable)
-- [ ] S1 — Research wave 🟡 in-progress — NEXT: dispatch R1–R5 (Opus max):
-      R1 fastlane deep-dive · R2 toolchain currency + xcodegen capability audit
-      + skill-update draft · R3 1Password op-wrapper .mcp.json · R4 SDK contract
-      cribs · R5 Claude Code surfaces (spinner/statusline/skills). Gate: Fable
-      freezes contracts v1.
-- [ ] S2 — Wave 1 superset app: W1A structure / W1B Shared+Tests / W1C targets.
+- [x] S1 — Research wave: R1–R5 complete (5/5, 0 errors; deliverables in
+      specs/_build/research/). Gate DONE 2026-08-02: all spec deltas applied,
+      contracts.md FROZEN v1. Headlines: xcodegen lists concatenate
+      (contingency withdrawn; relativePaths:false mandatory; bundleIdPrefix
+      banned); produce needs Apple ID (bootstrap_asc split); gym needs xcargs
+      threading + legacy export names; runner=macos-26/Xcode 26.6/iPhone 17;
+      floors 18.0/15.0/11.0; op IS authed here (service account, agentic
+      vault); spinnerVerbs+spinnerTipsOverride real at project scope;
+      skeleton agents' tools: syntax defect (avoid).
+- [ ] S2 — Wave 1 superset app 🟡 in-progress — NEXT: W1A structure / W1B
+      Shared+Tests / W1C targets (Opus max, disjoint ownership).
       Gate: Linux structural checks; Fable commits.
 - [ ] S3 — Wave 2 machinery: W2A generator / W2B fastlane / W2C build+CI /
       W2D agentic / W2E fun layer. Gate: ci-linux + generator pytest + 6 combo
