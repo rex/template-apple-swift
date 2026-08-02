@@ -1,0 +1,246 @@
+# fastlane/ASCFastfile — App Store Connect registration + introspection.
+#
+# Imported by fastlane/Fastfile. Split out by responsibility: everything here
+# talks to the ASC REST API through Spaceship and nothing here needs Xcode, so
+# both lanes are Linux-clean. Build/ship lanes live in the Fastfile.
+#
+# Constants (APP_ID, APP_GROUP_ID, TEAM_ID, COMPONENT_ASC) and the helper
+# private lanes (api_key, mac_enabled, …) come from the Fastfile.
+#
+# CAPABILITY LIMIT (R1 §B, contracts §8): the public ASC API has NO create-app
+# endpoint, and `produce` authenticates only with an Apple ID + 2FA session.
+# Bundle IDs and their capabilities ARE fully manageable with the API key —
+# app records, App Groups and iCloud containers are not. bootstrap_asc
+# therefore does everything it can and fails loudly on the manual residue.
+
+require "spaceship"
+
+# ASC BundleIdPlatform enum (not modelled by Spaceship): IOS | MAC_OS |
+# UNIVERSAL. watchOS extensions ride the IOS platform in the portal; the
+# shared host ID is UNIVERSAL when the mac component is on (Universal
+# Purchase, one bundle ID for both stores).
+BUNDLE_ID_PLATFORM_IOS = "IOS"
+BUNDLE_ID_PLATFORM_MAC = "MAC_OS"
+BUNDLE_ID_PLATFORM_UNIVERSAL = "UNIVERSAL"
+
+platform :ios do
+  desc "Register/verify every bundle ID + capability in App Store Connect."
+  desc "Options: dry_run:true to print the plan without writing."
+  lane :bootstrap_asc do |options|
+    asc_require_token
+    plan = asc_plan
+    dry = options[:dry_run] ? true : false
+
+    UI.header("Bundle IDs (#{plan.size})")
+    plan.each do |identifier, spec|
+      bundle = Spaceship::ConnectAPI::BundleId.find(identifier)
+      if bundle.nil?
+        if dry
+          UI.important("CREATE #{identifier} (#{spec[:platform]})")
+          next
+        end
+        UI.message("creating #{identifier}")
+        bundle = Spaceship::ConnectAPI::BundleId.create(
+          name: spec[:name],
+          identifier: identifier,
+          platform: spec[:platform],
+          seed_id: TEAM_ID,
+        )
+      else
+        UI.success("exists  #{identifier}")
+      end
+
+      have = bundle.get_capabilities.map(&:capability_type)
+      missing = spec[:caps] - have
+      if missing.empty?
+        UI.success("        capabilities OK (#{spec[:caps].join(', ')})")
+        next
+      end
+      if dry
+        UI.important("        ENABLE #{missing.join(', ')}")
+        next
+      end
+      missing.each do |capability|
+        UI.message("        enabling #{capability}")
+        bundle.create_capability(capability)
+      end
+    end
+
+    next if dry
+
+    asc_check_app_record
+    asc_check_app_group
+    UI.success("bootstrap_asc complete. Remaining manual steps: docs/asc-setup.md")
+  end
+
+  desc "Dump App Store Connect state and verify the bundle-ID registry."
+  lane :status do
+    asc_require_token
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+
+    UI.header("App record")
+    if app.nil?
+      UI.error("No ASC app record for #{APP_ID} — create it (docs/asc-setup.md §3).")
+    else
+      UI.message("name        #{app.name}")
+      UI.message("bundle id   #{app.bundle_id}")
+      UI.message("sku         #{app.sku}")
+      UI.message("locale      #{app.primary_locale}")
+      UI.message("mac opt-in  #{app.is_opted_in_to_distribute_ios_app_on_mac_app_store}")
+    end
+
+    UI.header("Bundle-ID registry")
+    asc_plan.each do |identifier, spec|
+      bundle = Spaceship::ConnectAPI::BundleId.find(identifier)
+      if bundle.nil?
+        UI.error("MISSING  #{identifier}")
+        next
+      end
+      have = bundle.get_capabilities.map(&:capability_type)
+      missing = spec[:caps] - have
+      if missing.empty?
+        UI.success("ok       #{identifier}")
+      else
+        UI.error("caps     #{identifier} — missing #{missing.join(', ')}")
+      end
+    end
+
+    if app
+      UI.header("App Store versions")
+      {
+        "live" => app.get_live_app_store_version,
+        "edit" => app.get_edit_app_store_version,
+        "in review" => app.get_in_review_app_store_version,
+        "pending release" => app.get_pending_release_app_store_version,
+      }.each do |label, version|
+        UI.message(format("%-16s %s", label, version ? "#{version.version_string} (#{version.app_store_state})" : "—"))
+      end
+
+      UI.header("Recent builds")
+      builds = app.get_builds(sort: "-uploadedDate", limit: 10)
+      if builds.empty?
+        UI.message("none")
+      else
+        builds.first(10).each do |build|
+          UI.message(format("%-10s %-12s %-10s %s",
+                            build.version, build.processing_state,
+                            build.expired ? "expired" : "live", build.uploaded_date))
+        end
+      end
+
+      UI.header("TestFlight groups")
+      groups = app.get_beta_groups
+      UI.message("none") if groups.empty?
+      groups.each do |group|
+        UI.message(format("%-30s %s", group.name, group.is_internal_group ? "internal" : "external"))
+      end
+    end
+
+    asc_build_number_report
+  end
+end
+
+# ==========================================================================
+# Private helpers
+# ==========================================================================
+
+private_lane :asc_require_token do
+  if Spaceship::ConnectAPI.token.nil?
+    UI.user_error!("No App Store Connect API token. Set APP_STORE_CONNECT_API_KEY_ID, " \
+                   "APP_STORE_CONNECT_API_ISSUER and one of APP_STORE_CONNECT_API_KEY " \
+                   "(base64 .p8) / APP_STORE_CONNECT_API_KEY_P8_PATH. The key must be a " \
+                   "TEAM key (App Manager or Admin) — Individual keys cannot use the " \
+                   "provisioning endpoints. See docs/asc-setup.md §2.")
+  end
+end
+
+# identifier => { name:, platform:, caps: [] } for the components on disk.
+private_lane :asc_plan do
+  live = live_components
+  host_caps = ["APP_GROUPS"] + live.flat_map { |component| component[:host_caps] }
+
+  plan = {
+    APP_ID => {
+      name: "MyApp",
+      platform: component_enabled?("mac") ? BUNDLE_ID_PLATFORM_UNIVERSAL : BUNDLE_ID_PLATFORM_IOS,
+      caps: host_caps.uniq,
+    },
+  }
+  live.each do |component|
+    component[:ids].each do |identifier|
+      plan[identifier] = {
+        # Portal display name: "MyApp <last segment>", e.g. "MyApp homewidget".
+        name: "MyApp #{identifier.sub("#{APP_ID}.", '').tr('.', ' ')}",
+        platform: component[:id] == "widget-mac" ? BUNDLE_ID_PLATFORM_MAC : BUNDLE_ID_PLATFORM_IOS,
+        caps: ["APP_GROUPS"],
+      }
+    end
+  end
+  plan
+end
+
+private_lane :asc_check_app_record do
+  next unless Spaceship::ConnectAPI::App.find(APP_ID).nil?
+
+  UI.user_error!("No App Store Connect app record for #{APP_ID}.\n" \
+                 "Apple's public API has no create-app endpoint and `produce` needs an " \
+                 "Apple ID + 2FA session, so this step cannot be automated with the API " \
+                 "key. Create the record in App Store Connect (My Apps → + → New App) — " \
+                 "step-by-step in docs/asc-setup.md §3 — then re-run this lane.")
+end
+
+# App Group *identifiers* cannot be created or enumerated through the public
+# API (R1 V7). Best available signal: whether the host bundle ID's APP_GROUPS
+# capability reports our group in its (undocumented, unmodelled) settings.
+private_lane :asc_check_app_group do
+  bundle = Spaceship::ConnectAPI::BundleId.find(APP_ID)
+  capability = bundle&.get_capabilities&.find { |c| c.capability_type == "APP_GROUPS" }
+
+  if capability.nil?
+    UI.user_error!("APP_GROUPS is not enabled on #{APP_ID} — bootstrap_asc should have " \
+                   "enabled it. Check the key's role (App Manager or Admin) and re-run.")
+  end
+
+  if capability.settings.to_s.include?(APP_GROUP_ID)
+    UI.success("App Group #{APP_GROUP_ID} is associated with #{APP_ID}.")
+    next
+  end
+
+  next if ENV["ASC_APP_GROUP_VERIFIED"].to_s == "1"
+
+  UI.user_error!("Cannot confirm the App Group #{APP_GROUP_ID}.\n" \
+                 "Apple exposes no /v1/appGroups endpoint, so this is either 'the group " \
+                 "does not exist' or 'the API does not report it'. It is load-bearing: " \
+                 "#{asc_plan.size} bundle IDs share it and an exportArchive exit-70 " \
+                 "pairing failure is the symptom when it is wrong.\n" \
+                 "Create it once at Certificates, Identifiers & Profiles → Identifiers → " \
+                 "App Groups, add every ID above to it (docs/asc-setup.md §4), then set " \
+                 "ASC_APP_GROUP_VERIFIED=1 to acknowledge and silence this check.")
+end
+
+# ADR-0007 derives CURRENT_PROJECT_VERSION from `git rev-list --count HEAD`.
+# Reporting it next to ASC's view makes divergence visible here instead of at
+# upload time.
+private_lane :asc_build_number_report do
+  UI.header("Build numbers")
+  local = begin
+    `git rev-list --count HEAD`.strip
+  rescue StandardError
+    "?"
+  end
+  UI.message(format("%-22s %s", "git rev-list --count", local))
+
+  tf = begin
+    latest_testflight_build_number(api_key: api_key, app_identifier: APP_ID, platform: "ios")
+  rescue StandardError => e
+    "n/a (#{e.message.lines.first.to_s.strip})"
+  end
+  UI.message(format("%-22s %s", "TestFlight latest", tf))
+
+  store = begin
+    app_store_build_number(api_key: api_key, app_identifier: APP_ID, live: true, platform: "ios")
+  rescue StandardError => e
+    "n/a (#{e.message.lines.first.to_s.strip})"
+  end
+  UI.message(format("%-22s %s", "App Store live", store))
+end

@@ -1,0 +1,171 @@
+# fastlane/Fastfile — release automation for MyApp (ADR-0002).
+#
+# Lane names are API (contracts §8). `make` delegates 1:1 — see
+# docs/release-automation.md for the runbook and docs/asc-setup.md for the
+# irreducibly-manual App Store Connect steps.
+#
+#   bundle exec fastlane lanes          # what's here
+#   bundle exec fastlane beta           # archive + TestFlight
+#
+# WHERE THE LANES LIVE (this file is the entry point: identity, hooks,
+# guards; each import below is one responsibility):
+#
+#   SigningFastfile   ASC auth, key materialisation, xcargs   → certs
+#   ShipFastfile      iOS archive + store pipeline            → beta,
+#                                                               screenshots,
+#                                                               metadata,
+#                                                               release
+#   MacFastfile       macOS archive + notarisation            → mac_beta,
+#                                                               notarize
+#   ASCFastfile       Spaceship registration + introspection  → bootstrap_asc,
+#                                                               status
+#
+# STRUCTURE (gate-resolved): there is NO `platform :mac` block. Every lane
+# lives in `platform :ios`; the Mac lanes and the Mac half of `metadata` gate
+# on the `mac` component internally and pass `platform: "osx"` where the ASC
+# API needs it.
+#
+# LINUX: `metadata`, `status` and `bootstrap_asc` are API-only and run
+# anywhere. `beta`, `mac_beta`, `screenshots`, `notarize` and `certs` need
+# macOS + Xcode; gym does NOT fail closed on its own (R1 V3b), so those lanes
+# call `require_macos` first.
+
+require "json"
+
+fastlane_version("2.237.0")
+opt_out_usage
+skip_docs
+default_platform(:ios)
+
+# --- Identity (the rename contract, contracts §1) -------------------------
+APP_ID       = "com.example.myapp"
+APP_GROUP_ID = "group.com.example.myapp"
+TEAM_ID      = "ABCDE12345"
+
+XCODEPROJ      = "MyApp.xcodeproj"
+SCHEME_IOS     = "MyApp"
+SCHEME_MAC     = "MyAppMac"
+BUILD_DIR      = "build"
+EXPORT_OPTIONS = "ExportOptions.plist"
+
+# --- Component → ASC surface ----------------------------------------------
+#
+# The generator does NOT prune this file (template/components.yaml lists no
+# `owns` entry and no `marker_files` entry for fastlane/), so every lane
+# derives the live component set from directories on disk. `dir` values are
+# exactly components.yaml `owns.dirs`; `ids` / `host_caps` are exactly its
+# `asc:` blocks.
+#
+# Two normalisations vs the registry, both deliberate:
+#   * `SIGN_IN_WITH_APPLE` is not an ASC capability type — Apple calls it
+#     `APPLE_ID_AUTH` (Spaceship::ConnectAPI::BundleIdCapability::Type).
+#   * PUSH_NOTIFICATIONS belongs on the HOST bundle ID: `aps-environment`
+#     lives in the host entitlements, never the extension's (contracts §3).
+COMPONENT_ASC = [
+  { id: "mac",           dir: "MyAppMac",                    ids: [],                                 host_caps: [] },
+  { id: "watch",         dir: "MyAppWatch",                  ids: ["#{APP_ID}.watch"],                host_caps: [] },
+  { id: "complications", dir: "WatchComplications",          ids: ["#{APP_ID}.watch.complications"],  host_caps: [] },
+  { id: "widgets-home",  dir: "HomeWidget",                  ids: ["#{APP_ID}.homewidget"],           host_caps: [] },
+  { id: "widget-mac",    dir: "MacWidget",                   ids: ["#{APP_ID}.macwidget"],            host_caps: [] },
+  { id: "live-activity", dir: "LiveActivity",                ids: ["#{APP_ID}.liveactivity"],         host_caps: [] },
+  { id: "nse",           dir: "NotificationService",         ids: ["#{APP_ID}.notificationservice"],  host_caps: ["PUSH_NOTIFICATIONS"] },
+  { id: "store",         dir: "Shared/Capabilities/Store",   ids: [],                                 host_caps: ["IN_APP_PURCHASE"] },
+  { id: "account",       dir: "Shared/Capabilities/Account", ids: [],                                 host_caps: ["APPLE_ID_AUTH", "ICLOUD"] },
+  { id: "health",        dir: "Shared/Capabilities/Health",  ids: [],                                 host_caps: ["HEALTHKIT"] },
+].freeze
+
+# --- Paths ----------------------------------------------------------------
+#
+# fastlane parses the Fastfile and runs every lane with the working directory
+# set to ./fastlane. Its ACTIONS chdir up to the repo root for each call, so
+# relative paths handed to build_app/deliver/frameit are repo-relative — but
+# plain Ruby inside a lane is NOT. Anchor everything we stat ourselves.
+REPO_ROOT = File.expand_path("..", Dir.pwd)
+
+def repo_path(*parts)
+  File.join(REPO_ROOT, *parts)
+end
+
+# Components enabled in THIS repo, derived from the tree (see COMPONENT_ASC).
+def live_components
+  COMPONENT_ASC.select { |component| Dir.exist?(repo_path(component[:dir])) }
+end
+
+def component_enabled?(component_id)
+  live_components.any? { |component| component[:id] == component_id }
+end
+
+import("./SigningFastfile")
+import("./ShipFastfile")
+import("./MacFastfile")
+import("./ASCFastfile")
+
+# ==========================================================================
+# Hooks
+# ==========================================================================
+
+before_all do |lane, _options|
+  ENV["FASTLANE_SKIP_UPDATE_CHECK"] = "1"
+  ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] ||= "120"
+  # fastlane warns and some actions misbehave without a UTF-8 locale; Linux CI
+  # images default to POSIX/C (R1 V3a).
+  ENV["LC_ALL"] ||= "C.UTF-8"
+  ENV["LANG"]   ||= "C.UTF-8"
+  UI.message("lane: #{lane} · host: #{FastlaneCore::Helper.mac? ? 'macOS' : RUBY_PLATFORM}")
+  load_asc_api_key
+end
+
+error do |lane, exception, _options|
+  UI.error("lane '#{lane}' failed: #{exception.message}")
+  UI.error("Runbook: docs/release-automation.md")
+  UI.error("Manual ASC steps: docs/asc-setup.md")
+end
+
+# ==========================================================================
+# Guards and preflight checks
+# ==========================================================================
+
+private_lane :require_macos do
+  unless FastlaneCore::Helper.mac?
+    UI.user_error!("This lane needs macOS + Xcode (host is #{RUBY_PLATFORM}). " \
+                   "Linux-clean lanes: metadata, status, bootstrap_asc.")
+  end
+end
+
+private_lane :mac_enabled do
+  component_enabled?("mac")
+end
+
+private_lane :require_mac_component do
+  unless component_enabled?("mac")
+    UI.user_error!("The `mac` component is not enabled in this repo (no MyAppMac/). " \
+                   "Re-run onboarding with components.mac: true to get the Mac lanes.")
+  end
+end
+
+# Gate resolution #4: the template ships EMPTY icon wells on purpose. Catch
+# that here rather than 20 minutes later as ITMS-90022 from the upload.
+private_lane :icon_preflight do
+  set = "MyApp/Assets.xcassets/AppIcon.appiconset"
+  json = repo_path(set, "Contents.json")
+  UI.user_error!("Missing #{set}/Contents.json") unless File.exist?(json)
+  images = JSON.parse(File.read(json))["images"] || []
+  master = images.find do |image|
+    image["size"].to_s.start_with?("1024x1024") &&
+      !image["filename"].to_s.empty? &&
+      File.exist?(repo_path(set, image["filename"]))
+  end
+  if master.nil?
+    UI.user_error!("No 1024×1024 app icon in #{set}. App Store builds are rejected " \
+                   "without one. Drop a 1024×1024 PNG (no alpha, no rounded corners) " \
+                   "into that folder and reference it from Contents.json — this is a " \
+                   "first-run onboarding step, see docs/asc-setup.md §6.")
+  end
+end
+
+# One source of truth for TestFlight "What to Test" and the App Store release
+# notes (R1 capability audit).
+private_lane :changelog_text do
+  path = repo_path("fastlane/metadata/en-US/release_notes.txt")
+  File.exist?(path) ? File.read(path).strip : "See the commit log."
+end

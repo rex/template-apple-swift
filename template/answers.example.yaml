@@ -1,0 +1,95 @@
+# template-apple-swift — onboarding answers, every field documented.
+#
+# Copy to `template/answers.local.yaml` (gitignored), edit, then run:
+#
+#     uv run template/generate.py --answers template/answers.local.yaml --dest ../MyNewApp
+#     uv run template/generate.py --answers template/answers.local.yaml --apply
+#
+# `--dest` transforms a copy and leaves this repo alone; `--apply` rewrites this
+# repo in place and deletes `template/` at the end. Add `--dry-run` to either to
+# print the plan and write nothing. The generator runs NO git commands — commit
+# or stash before `--apply` if you want a way back.
+#
+# Schema: template/answers.schema.json ($id template-apple-swift/answers/v1).
+# Unknown keys are ERRORS, not warnings: a typo'd component name must never be
+# read as "off". Every value below is the schema default unless noted.
+
+identity:
+  # PascalCase, a valid Swift identifier, 2–30 characters. Becomes the target
+  # names (MyApp, MyAppMac, MyAppWatch, MyAppTests, MyAppUITests), the source
+  # directory names, and the scheme names. Its lowercase form is the slug used
+  # in BGTask identifiers.
+  app_name: MyApp
+
+  # Human-facing name (CFBundleDisplayName), ≤30 characters. May contain
+  # spaces and punctuation. Defaults to app_name when omitted.
+  display_name: "MyApp"
+
+  # The iOS AND macOS app bundle ID — one string, deliberately: Universal
+  # Purchase requires both platforms to share it, and a split ID breaks paid /
+  # IAP entitlement transfer. Every extension ID is derived as this plus
+  # exactly one segment (ITMS-90347), and the App Group is `group.` + this.
+  bundle_root: com.example.myapp
+
+  # Your 10-character Apple Developer Team ID. Written to the one file allowed
+  # to name DEVELOPMENT_TEAM: Config/Shared.xcconfig.
+  team_id: ABCDE12345
+
+components:
+  # Booleans keyed by the frozen component IDs. Dependency violations are
+  # ERRORS with the fix printed — never silently auto-corrected.
+  #   complications requires watch
+  #   widget-mac    requires mac
+
+  mac: true                # macOS app target (MyAppMac) + Universal Purchase
+  watch: true              # watchOS companion app + WCSession seam
+  complications: true      # Watch complications extension       [requires watch]
+  widgets-home: true       # iOS home-screen / Lock Screen widgets
+  widget-mac: true         # macOS widget extension              [requires mac]
+  live-activity: true      # Live Activity + Dynamic Island
+  nse: true                # Notification Service Extension + APNs registration
+  swiftdata: true          # @Model Checkpoint + SwiftData persistence
+  store: false             # StoreKit 2 paywall stub + Settings section
+  account: false           # Sign in with Apple + CloudKit stub
+  health: false            # HealthKit capability (default OFF — App Review
+                           # scrutinises health entitlements hard)
+
+deployment:
+  # Minimum OS floors. The three defaults are ONE OS cohort (September 2024)
+  # by construction; mixing cohorts is a warning, not an error. A documented
+  # `modern` preset is 26.0 / 26.0 / 26.0 for apps that hard-adopt OS-26
+  # design APIs. The build SDK is always the latest stable Xcode's.
+  ios: "18.0"              # ~93% of active iPhones as of Aug 2026
+  macos: "15.0"
+  watchos: "11.0"
+
+ops:
+  # xcode_cloud — ci_scripts/ci_post_clone.sh drives builds (no runner minutes)
+  # github_actions — installs .github/workflows/release.yml from the payload
+  # none — no CI wiring at all
+  ci_system: xcode_cloud
+
+  # automatic — Xcode cloud-managed signing; works for App Store distribution
+  # match — fastlane match; recommended for Developer ID / notarised Mac builds
+  signing: automatic
+
+  # frameit needs ImageMagick plus community device frames. Off by default so
+  # `make screenshots` has no surprise system dependency.
+  frameit: false
+
+  # Materialize .claude/spinner-verbs.txt + spinner-tips.txt into
+  # .claude/settings.json. False removes the corpora and the sync script.
+  # Needs Claude Code v2.1.144+ (older builds leak verbs into past-tense text).
+  spinner_flavor: true
+
+  # A project statusLine REPLACES a personal one, so this is opt-in. False
+  # deletes .claude/statusline.sh and drops the settings.json key.
+  statusline: false
+
+  # Recorded in VIBE.yaml. continue-until-blocked lets agents run a slice to
+  # completion; interactive stops at each decision point.
+  autonomy: continue-until-blocked
+
+  # Advisory only — the generator runs no git commands. When true, the
+  # onboarding record lists "squash the history yourself" as a manual step.
+  squash_history: false

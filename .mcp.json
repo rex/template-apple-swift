@@ -1,0 +1,19 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/v1/mcp.json",
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headersHelper": "f=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/scripts/mcp/op-headers.sh\"; [ -r \"$f\" ] && exec sh \"$f\"; echo \"{}\""
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headersHelper": "f=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/scripts/mcp/op-headers.sh\"; [ -r \"$f\" ] && exec sh \"$f\"; echo \"{}\""
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}

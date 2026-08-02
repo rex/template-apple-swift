@@ -34,11 +34,19 @@ ownership: `specs/_build/file-ownership.md`.
       onSnapshot fan-out wiring, WatchLink mac exclusion, components.yaml
       updated, structural gate 0 FAIL. Resolutions:
       specs/_build/gate-w1-resolutions.md.
-- [ ] S3a — Wave 2 machinery 🟡 in-progress — NEXT: W2A generator / W2B
-      fastlane / W2C build+CI / W2D agentic / W2E fun (Opus max, disjoint).
-- [ ] S3 — Wave 2 machinery: W2A generator / W2B fastlane / W2C build+CI /
-      W2D agentic / W2E fun layer. Gate: ci-linux + generator pytest + 6 combo
-      dry-runs; Fable commits.
+- [x] S3 — Wave 2 machinery: W2A/W2B/W2C/W2D/W2E complete (5/5, 0 errors).
+      Gate DONE 2026-08-02: VERSION created (0.1.0); vibe.py schema-valid
+      candidate paths; pre-compact hook renamed pre-compact-apple.sh
+      (sync-safe); Versions.xcconfig untracked+gitignored (machine-written);
+      check-no-serena guard added to ci-linux; APPLE_ID_AUTH capability fix;
+      spinner corpus materialized (194 verbs + 37 tips, spinner-check green);
+      onboard.md race → W2E superset ratified; make/*.mk partition ratified.
+      RESULT: make ci-linux ALL 14 GATES PASS · generator pytest 113/113 ·
+      all six combos generate+verify · nine fastlane lanes register ·
+      statusline <300ms. Ratified divergences + answers:
+      specs/_build/questions-w2*.md (gate notes inline).
+- [ ] S4 — Integration 🟡 in-progress — NEXT: CHANGELOG entry, final
+      cross-ref sweep, push; then trigger verify-macos.
 - [ ] S4 — Integration: cross-reference reconciliation, full Linux verification,
       version bump, CHANGELOG, push.
 - [ ] S5 — Mac verification loop: verify-macos matrix → green (fix agents on

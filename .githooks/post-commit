@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+#
+# post-commit — mirror every commit to ALL configured remotes.
+#
+# Installed by `make bootstrap` (copied to .git/hooks/post-commit — git hooks
+# are per-clone and cannot be tracked in place). Adapted from
+# agentic-skeleton/scripts/git-hooks/post-commit-autopush.sh, widened from
+# `origin` to every remote so a github + gitea pair stays in sync without
+# anyone remembering both.
+#
+# Per agentic-skeleton/references/agent-behavior.md: "Push every commit you
+# author. Never leave a committed-but-unpushed state for the user to discover."
+#
+# Non-fatal by design: the commit already happened, so a failed push (offline,
+# non-fast-forward) warns and moves on. It NEVER blocks the commit and NEVER
+# force-pushes.
+#
+# Skip one commit:   MyApp_NO_AUTOPUSH=1 git commit ...
+#                    NO_AUTOPUSH=1 git commit ...        (either name works)
+#
+# Caveat: this pushes work-in-progress too. Amending or rebasing something that
+# already auto-pushed needs a deliberate force-push.
+
+set -uo pipefail
+
+[ -n "${NO_AUTOPUSH:-}" ] && exit 0
+[ -n "${MyApp_NO_AUTOPUSH:-}" ] && exit 0
+
+# Mid-rebase / cherry-pick / revert: defer to the operator, who will push when
+# the whole operation lands.
+case "${GIT_REFLOG_ACTION:-}" in
+    rebase*|cherry-pick*|revert*) exit 0 ;;
+esac
+
+branch="$(git symbolic-ref --short -q HEAD)" || {
+    echo "[post-commit] detached HEAD — skipping auto-push"
+    exit 0
+}
+
+remotes="$(git remote)"
+[ -z "$remotes" ] && { echo "[post-commit] no remotes — nothing to push"; exit 0; }
+
+for remote in $remotes; do
+    if git rev-parse --abbrev-ref "${branch}@{upstream}" >/dev/null 2>&1; then
+        push_args=("$remote" "$branch")
+    else
+        push_args=(-u "$remote" "$branch")
+    fi
+    if git push --quiet "${push_args[@]}"; then
+        echo "[post-commit] ✓ $branch → $remote"
+    else
+        echo "[post-commit] ⚠ push to '$remote' failed (non-fatal) — run: git push $remote $branch" >&2
+    fi
+done
+
+exit 0

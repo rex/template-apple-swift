@@ -1,0 +1,16 @@
+MyApp is a checkpoint tracker: start a session, log the moments that matter, and see your day add up.
+
+PLACEHOLDER — replace every line of this file before your first submission. App Review rejects placeholder copy, and precheck (the `release` lane) will fail the build on words like "lorem ipsum" or "coming soon".
+
+WHAT TO WRITE HERE
+• Open with the one sentence a stranger needs to decide. No feature list yet.
+• Then three to six short benefit lines. Concrete verbs, no adjectives stacked.
+• Mention the surfaces you actually shipped — Home Screen widgets, Lock Screen Live Activity, Apple Watch complications — only if those components are enabled.
+• Close with support and privacy expectations.
+
+RULES THAT BITE
+• Maximum 4000 characters.
+• Never name another platform ("also on Android") — instant rejection.
+• Never promise unreleased functionality ("coming soon", "beta").
+• Never say "free" next to anything that costs money in-app.
+• URLs in the description must resolve; precheck checks them.

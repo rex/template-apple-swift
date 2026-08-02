@@ -1,0 +1,225 @@
+# .claude/spinner-verbs.txt — the spinner corpus (contracts §12 / R5 SD-3).
+#
+# One verb per line. Blank lines and lines starting with `#` are ignored.
+# `scripts/sync_spinner_verbs.py` materializes this list into
+# `.claude/settings.json` → `spinnerVerbs.verbs` (mode: "append", so the
+# built-ins survive). `make spinner-check` fails when the two drift.
+#
+# RULES, and they are load-bearing:
+#   * GERUNDS ONLY. Claude Code renders each entry as "<Verb>…" while a turn
+#     runs. Since v2.1.144 the past-tense turn-completion line ("Worked for
+#     5s") always uses built-ins, so a past-tense entry here is just wrong.
+#   * ≤ 16 characters. Narrow terminals wrap, and a wrapped spinner is sad.
+#   * These are renamed with everything else at onboarding — a verb may
+#     legitimately contain `MyApp` and will come out the other side as your
+#     app's name. Exactly one entry below does; mind the length after rename.
+#   * Needs Claude Code v2.1.144+. Below that, verbs leak into past tense.
+#
+# Yes, it is profane. That was the requirement. Cut what you don't want —
+# any subset ≥ 1 entry is valid, the schema only demands minItems: 1.
+
+# ─── Xcode and the Swift compiler ──────────────────────────────────────
+Xcodegenerating
+Xcodegenning
+Re-xcodegening
+Regenerating
+Recompiling
+Typechecking
+Monomorphizing
+Devirtualizing
+Inlining
+Hoisting
+Deriving
+Segfaulting
+Deadlocking
+Actor-isolating
+Sendabling
+Awaiting
+Unwrapping
+Force-unwrapping
+Nil-coalescing
+Optionaling
+Retaining
+Leaking
+Autoreleasing
+Swiftening
+Symbolicating
+Instrumenting
+Profiling
+Clean-building
+Derived-nuking
+Resolving SPM
+Scheme-hunting
+Target-wrangling
+Plist-wrangling
+Marker-stripping
+Token-renaming
+Componentizing
+Supersetting
+Pruning
+Simctl-ing
+Booting sims
+Blaming Xcode
+Blaming SwiftUI
+Blaming the SDK
+Appeasing Xcode
+Praying to Xcode
+
+# ─── The Apple tax ─────────────────────────────────────────────────────
+Codesigning
+Provisioning
+Entitling
+Sandboxing
+Hardening
+Archiving
+Notarizing
+Stapling
+Bundling
+Universalizing
+Sideloading
+TestFlighting
+App-Reviewing
+Resubmitting
+Appeasing
+Grovelling
+Rejecting
+Cert-rotating
+Cert-expiring
+Profile-hunting
+Keychain-poking
+ITMS-90347-ing
+Exit-70-ing
+Radar-filing
+Feedback-filing
+Sherlocking
+Skeuomorphing
+Couraging
+Dongling
+Dongle-buying
+Cable-hunting
+Genius-barring
+Wallet-draining
+Keynoting
+WWDC-hyping
+Beta-installing
+Bricking
+iCloud-syncing
+Airdropping
+Handoffing
+Magsafing
+Genmojiing
+Siri-baiting
+Widgetizing
+Complicating
+Islanding
+Live-Activating
+Silent-pushing
+APNs-poking
+WCSession-ing
+65KB-dropping
+Bezeling
+Notching
+
+# ─── fastlane and the shipping pipeline ────────────────────────────────
+Fastlaning
+Gymming
+Piloting
+Delivering
+Matching
+Spaceshipping
+Snapshotting
+Frameiting
+Prechecking
+Bundle-exec-ing
+Gem-installing
+Pod-avoiding
+Greenlighting
+Shipping
+Shipping MyApp
+Merging
+Rebasing
+Squashing
+Cherry-picking
+Bisecting
+Reverting
+Blaming
+Tagging
+Force-pushing
+Speedrunning
+Yeeting
+Sending it
+Full-sending
+Cowboying
+Prod-poking
+Hail-Marying
+Manifesting
+Praying
+
+# ─── Self-aware machine ────────────────────────────────────────────────
+Hallucinating
+Confabulating
+Overthinking
+Underthinking
+Ultrathinking
+Token-burning
+Context-cramming
+Compacting
+Sandbagging
+Sycophanting
+Apologizing
+Gaslighting
+Pretending
+Subagenting
+Yapping
+Glazing
+Cooking
+Locking in
+Goblin-moding
+Big-braining
+Doomscrolling
+Doomposting
+
+# ─── Degenerate (as requested) ─────────────────────────────────────────
+Unfucking
+Refuckoring
+Clusterfucking
+Fuckarounding
+Finding out
+Fucking about
+Pissing about
+Cocking it up
+Shitposting
+Bullshitting
+Half-assing
+Whole-assing
+Ass-covering
+Shit-canning
+Dicking around
+Going balls-out
+Hard-launching
+Thirst-trapping
+Brown-nosing
+Edging
+Rage-quitting
+Bodging
+Kludging
+Yolo-ing
+
+# ─── Honest labour ─────────────────────────────────────────────────────
+Bikeshedding
+Yak-shaving
+Nerdsniping
+Spelunking
+Jury-rigging
+Duct-taping
+Hand-waving
+Finagling
+Wrangling
+Noodling
+Marinating
+Percolating
+Ruminating
+Incanting
+Summoning
+Divining
+Sacrificing

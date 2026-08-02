@@ -1,0 +1,40 @@
+# CI combo: ios-watch
+#
+# iPhone + Apple Watch. Exercises the watch dependency edge and the
+# complications-requires-watch rule.
+#
+# Consumed by template/tests/test_combos.py and by the verify-macos
+# matrix. Schema: template/answers.schema.json.
+
+identity:
+  app_name: MyApp
+  display_name: "MyApp"
+  bundle_root: com.example.myapp
+  team_id: ABCDE12345
+
+components:
+  mac: false
+  watch: true
+  complications: true
+  widgets-home: false
+  widget-mac: false
+  live-activity: false
+  nse: false
+  swiftdata: true
+  store: false
+  account: false
+  health: false
+
+deployment:
+  ios: "18.0"
+  macos: "15.0"
+  watchos: "11.0"
+
+ops:
+  ci_system: xcode_cloud
+  signing: automatic
+  frameit: false
+  spinner_flavor: true
+  statusline: false
+  autonomy: continue-until-blocked
+  squash_history: false

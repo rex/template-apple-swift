@@ -1,0 +1,7 @@
+MyApp needs no account and no network connection to review. Launch it, tap
+Start, tap Log Checkpoint, tap End — that exercises the whole app.
+
+PLACEHOLDER: rewrite this for your app before the first submission. If your
+app needs a login, add demo_user.txt and demo_password.txt next to this file
+(both are gitignored patterns waiting to happen — prefer a demo account whose
+credentials you are willing to have in git, or set them via the lane instead).

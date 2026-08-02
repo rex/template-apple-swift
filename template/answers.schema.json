@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "template-apple-swift/answers/v0",
-  "title": "template-apple-swift onboarding answers (DRAFT — W2A finalizes as v1)",
+  "$id": "template-apple-swift/answers/v1",
+  "title": "template-apple-swift onboarding answers (v1)",
   "type": "object",
   "additionalProperties": false,
   "required": ["identity", "components"],

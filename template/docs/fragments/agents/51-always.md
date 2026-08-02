@@ -1,0 +1,2 @@
+- `{{app_name}}/AGENTS.md` — iOS app target
+- `Shared/AGENTS.md` — cross-platform code

@@ -1,0 +1,41 @@
+# CI combo: minimal
+#
+# Every component off AND a different identity. This is the only combo
+# that renames, so it is the one that exercises the substitution engine,
+# the path moves and the residual-token scan end to end.
+#
+# Consumed by template/tests/test_combos.py and by the verify-macos
+# matrix. Schema: template/answers.schema.json.
+
+identity:
+  app_name: Probe
+  display_name: "Probe"
+  bundle_root: io.example.probe
+  team_id: ABCDE12345
+
+components:
+  mac: false
+  watch: false
+  complications: false
+  widgets-home: false
+  widget-mac: false
+  live-activity: false
+  nse: false
+  swiftdata: false
+  store: false
+  account: false
+  health: false
+
+deployment:
+  ios: "18.0"
+  macos: "15.0"
+  watchos: "11.0"
+
+ops:
+  ci_system: none
+  signing: automatic
+  frameit: false
+  spinner_flavor: false
+  statusline: false
+  autonomy: continue-until-blocked
+  squash_history: false

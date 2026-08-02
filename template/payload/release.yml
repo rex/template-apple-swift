@@ -1,0 +1,135 @@
+# .github/workflows/release.yml — TestFlight on tag.
+#
+# GENERATED-REPO PAYLOAD. The onboarding generator copies this file to
+# .github/workflows/release.yml when `ops.ci_system: github_actions`. It is
+# NOT a workflow of the template repo itself (the template's own CI is
+# ci.yml + verify-macos.yml, ADR-0003).
+#
+# Choose ONE release CI: if you also use Xcode Cloud, do not let both archive
+# the same tag — build numbers double-increment (R1 V26).
+#
+# REQUIRED SECRETS (Settings → Secrets and variables → Actions):
+#   APP_STORE_CONNECT_API_KEY        base64 of the .p8  (`base64 -i AuthKey_XXX.p8`)
+#   APP_STORE_CONNECT_API_KEY_ID     the 10-char Key ID
+#   APP_STORE_CONNECT_API_ISSUER     the issuer UUID
+# OPTIONAL:
+#   MATCH_GIT_URL, MATCH_PASSWORD    only when ops.signing: match
+#   PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY   failure notifications
+#
+# The key must be a TEAM key (App Manager or Admin). Individual keys cannot
+# use the provisioning endpoints or notarytool.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      external:
+        description: "Distribute to external TestFlight groups"
+        type: boolean
+        default: false
+      groups:
+        description: "External group names (comma separated)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    # macos-26 is arm64-native and the macos-latest alias since June 2026.
+    # Pinned explicitly: `macos-latest` moving under us would change the Xcode
+    # default and the simulator device list.
+    runs-on: macos-26
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # CURRENT_PROJECT_VERSION is `git rev-list --count HEAD` (ADR-0007).
+          # A shallow clone silently produces build number 1.
+          fetch-depth: 0
+
+      # Apple has required the iOS 26 SDK for App Store uploads since
+      # 2026-04-28. A plain xcode-select beats a third-party setup action:
+      # one fewer dependency to SHA-pin and renovate.
+      - name: Select Xcode 26.6
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.6.app
+          xcodebuild -version
+
+      # Neither is preinstalled on the runner image; fastlane 2.237.0 is, but
+      # we install our own from the committed lock.
+      - name: Install build tools
+        run: brew install xcodegen xcbeautify
+
+      - uses: ruby/setup-ruby@7d3497fd78c07c0d84ebafa58d8dac60cd1f0763 # v1.199.0
+        with:
+          ruby-version-file: .ruby-version
+          bundler-cache: true
+
+      # Generates the .xcodeproj and writes Config/Versions.xcconfig.
+      - name: Bootstrap
+        run: make bootstrap
+
+      - name: TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER: ${{ secrets.APP_STORE_CONNECT_API_ISSUER }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+        run: |
+          bundle exec fastlane beta \
+            external:${{ inputs.external || false }} \
+            groups:'${{ inputs.groups }}'
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-logs
+          # No .ipa: it is signed, large, and already on App Store Connect.
+          path: |
+            build/*.dSYM.zip
+            build/*.xcresult
+            fastlane/report.xml
+          retention-days: 14
+          if-no-files-found: ignore
+
+      # agentic-skeleton notification contract. Silently skipped when the
+      # secrets are absent, so forks and first runs do not fail on it.
+      #
+      # The emptiness check lives in the shell, not in `if:` — the `secrets`
+      # context is NOT available to a step-level `if`, and the alternative
+      # (hoisting the tokens to job-level `env` so `env.X != ''` works) would
+      # expose them to every step in the job for no gain.
+      - name: Notify failure (Pushover)
+        if: failure()
+        env:
+          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "${PUSHOVER_APP_TOKEN}" ] || [ -z "${PUSHOVER_USER_KEY}" ]; then
+            echo "Pushover secrets not configured — skipping notification."
+            exit 0
+          fi
+          curl -sS --fail-with-body \
+            --form-string "token=${PUSHOVER_APP_TOKEN}" \
+            --form-string "user=${PUSHOVER_USER_KEY}" \
+            --form-string "title=MyApp release failed" \
+            --form-string "message=${GITHUB_REF_NAME} failed on ${GITHUB_WORKFLOW}" \
+            --form-string "url=${RUN_URL}" \
+            --form-string "url_title=Open run" \
+            --form-string "priority=1" \
+            https://api.pushover.net/1/messages.json

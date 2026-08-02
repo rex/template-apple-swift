@@ -1,0 +1,54 @@
+# fastlane/Snapfile — App Store screenshot capture (`make screenshots`).
+#
+# snapshot drives the MyAppUITests target through the MyAppScreenshots scheme
+# (scheme names are API — gate resolution #5). UITests/MyAppUITests/
+# SnapshotHelper.swift is vendored, do-not-edit; refresh it with
+# `bundle exec fastlane snapshot update`.
+#
+# snapshot is iOS/tvOS **simulator only**. There is no macOS or watchOS
+# screenshot automation in fastlane (R1 V16) — Mac shots are captured by hand
+# (or by an XCUIScreen.main.screenshot() test) and dropped into
+# fastlane/screenshots-mac/<locale>/.
+
+project("MyApp.xcodeproj")
+scheme("MyAppScreenshots")
+test_target_name("MyAppUITests")
+
+# DEVICES. Two constraints pull in different directions:
+#
+#   * Simulator names are runner-image-coupled. These two exist on the
+#     macos-26 image (R2 V4); `iPhone 15` / `Apple Watch Series 9` do NOT.
+#   * deliver routes screenshots by PIXEL RESOLUTION, and the App Store's
+#     required slot is the 6.9" iPhone (1320×2868 → APP_IPHONE_67), plus the
+#     13" iPad (2064×2752 → APP_IPAD_PRO_3GEN_129) if the app ships on iPad.
+#     Everything else Apple auto-scales.
+#
+# So the *screenshot* device is iPhone 17 Pro Max even though the default
+# *test* device (Makefile `DEVICE`, ADR-0003) is the plain iPhone 17: a 6.3"
+# iPhone 17 produces 1206×2622, which lands in the optional APP_IPHONE_61 slot
+# and leaves the required set empty.
+devices([
+          "iPhone 17 Pro Max",
+          "iPad Pro 13-inch (M5)",
+        ])
+
+# Add locales as the String Catalog grows; each becomes a
+# fastlane/screenshots/<locale>/ directory.
+languages(["en-US"])
+
+output_directory("./fastlane/screenshots")
+clear_previous_screenshots(true)
+
+# 9:41, full bars, no carrier noise — the App-Store-grade status bar.
+override_status_bar(true)
+
+concurrent_simulators(true)
+stop_after_first_error(true)
+number_of_retries(1)
+
+# Uncomment as needed:
+#   dark_mode(true)              # a second pass in dark appearance
+#   localize_simulator(true)     # set the simulator's own language per locale
+#   launch_arguments(["-UITestSeed demo"])  # deterministic demo data
+#   erase_simulator(true)        # slower, but reproducible from a cold device
+#   only_testing(["MyAppUITests/ScreenshotTests"])

@@ -1,0 +1,139 @@
+# fastlane/ShipFastfile — the iOS archive → TestFlight → App Store pipeline.
+#
+# Imported by fastlane/Fastfile. Owns: beta, screenshots, metadata, release.
+# Mac lanes live in MacFastfile; ASC registration/introspection in ASCFastfile.
+
+platform :ios do
+  desc "Archive the iOS app and ship it to TestFlight."
+  desc "Options: external:true · groups:'Group A,Group B' · changelog:'…'"
+  lane :beta do |options|
+    require_macos
+    icon_preflight
+    assert_export_options(method: "app-store")
+    prepare_signing
+
+    xcargs = signing_xcargs
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME_IOS,
+      configuration: "Release",
+      export_method: "app-store", # legacy spelling; gym rejects app-store-connect
+      export_options: EXPORT_OPTIONS,
+      xcargs: xcargs,
+      export_xcargs: xcargs,
+      output_directory: BUILD_DIR,
+      output_name: "MyApp.ipa",
+      clean: true,
+      include_symbols: true,
+      result_bundle: true,
+      xcodebuild_formatter: "xcbeautify",
+    )
+
+    external = options[:external] ? true : false
+    groups = options[:groups].to_s.split(",").map(&:strip).reject(&:empty?)
+    UI.user_error!("external:true needs groups:'Group Name'") if external && groups.empty?
+
+    # One pilot call = upload → wait for processing → distribute. For the
+    # "upload now, distribute later" split, use pilot(skip_submission: true)
+    # here and pilot(distribute_only: true, app_version:, build_number:) from
+    # a later job.
+    #
+    # NEVER set PILOT_DISTRIBUTE_EXTERNAL in .env: `distribute_external` and
+    # `submit_beta_review` share that one env name with opposite defaults
+    # (R1 V9a). Both are passed explicitly here for that reason.
+    pilot(
+      api_key: api_key,
+      app_identifier: APP_ID,
+      app_platform: "ios",
+      ipa: lane_context[SharedValues::IPA_OUTPUT_PATH],
+      changelog: options[:changelog] || changelog_text,
+      skip_waiting_for_build_processing: false,
+      wait_processing_interval: 30,
+      distribute_external: external,
+      submit_beta_review: external,
+      groups: groups.empty? ? nil : groups,
+      notify_external_testers: external,
+      expire_previous_builds: true,
+      uses_non_exempt_encryption: false,
+    )
+  end
+
+  desc "Capture App Store screenshots with snapshot (iOS simulators only)."
+  desc "Options: frame:true to run frameit (or FRAMEIT=1)."
+  lane :screenshots do |options|
+    require_macos
+    snapshot # every knob lives in fastlane/Snapfile
+
+    frame = options[:frame].nil? ? ENV["FRAMEIT"].to_s == "1" : options[:frame]
+    next unless frame
+
+    unless %w[magick convert].any? { |bin| FastlaneCore::CommandExecutor.which(bin) }
+      UI.user_error!("FRAMEIT=1 but ImageMagick is not installed (`brew install imagemagick`). " \
+                     "frameit is opt-in for exactly this reason — see ops.frameit in " \
+                     "template/answers.example.yaml.")
+    end
+    frameit(path: "./fastlane/screenshots", use_platform: "IOS")
+  end
+
+  desc "Push metadata + screenshots to App Store Connect. No binary."
+  lane :metadata do
+    common = {
+      api_key: api_key,
+      app_identifier: APP_ID,
+      skip_binary_upload: true,
+      skip_app_version_update: false,
+      overwrite_screenshots: true,
+      force: true, # non-interactive: skip the HTML preview confirmation
+      run_precheck_before_submit: false,
+      submission_information: { add_id_info_uses_idfa: false },
+    }
+    deliver(common.merge(platform: "ios"))
+
+    # Universal Purchase: one ASC record, two platforms. Version-scoped
+    # metadata and screenshots are per-platform, so macOS needs its own
+    # deliver run (R1 V13). App-level values (name, subtitle, privacy_url,
+    # categories) are shared and are simply re-sent.
+    next unless mac_enabled
+
+    # deliver runs as an action, which chdir's to the repo root — so it gets
+    # the repo-relative path while our own stat uses the anchored one.
+    deliver(common.merge(
+              platform: "osx",
+              screenshots_path: "./fastlane/screenshots-mac",
+              # snapshot cannot drive macOS (R1 V16) — Mac screenshots are made
+              # by hand and dropped into screenshots-mac/<locale>/.
+              skip_screenshots: !Dir.exist?(repo_path("fastlane/screenshots-mac")),
+            ))
+  end
+
+  desc "precheck, then submit the current build for App Store review (phased)."
+  desc "Options: build_number:'123' to pick a specific uploaded build."
+  lane :release do |options|
+    # Running precheck as its own step (rather than only via deliver's
+    # run_precheck_before_submit) gives a fail-fast gate at :error level.
+    precheck(
+      api_key: api_key,
+      app_identifier: APP_ID,
+      # precheck's IAP rules need an Apple-ID session; with an API key they
+      # cannot run and would abort the lane (R1 V12).
+      include_in_app_purchases: false,
+      default_rule_level: :error,
+    )
+    deliver(
+      api_key: api_key,
+      app_identifier: APP_ID,
+      platform: "ios",
+      build_number: options[:build_number],
+      skip_binary_upload: true,
+      submit_for_review: true,
+      automatic_release: false, # mutually exclusive with auto_release_date
+      phased_release: true,
+      force: true,
+      run_precheck_before_submit: false, # already ran, at :error level
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false,
+      },
+    )
+  end
+end

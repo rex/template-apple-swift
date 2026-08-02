@@ -127,3 +127,12 @@ Cartfile.resolved
 # OS / editor noise.
 .DS_Store
 *.swp
+
+# Machine-written (scripts/apple/write-versions.sh via bootstrap/CI/release lanes)
+# — regenerate, never commit (ADR-0007; xcodegen tolerates absence via
+# disabledValidations: [missingConfigFiles]).
+Config/Versions.xcconfig
+
+# Claude Code local overrides + hand-captured Mac screenshots
+.claude/settings.local.json
+fastlane/screenshots-mac/**/*.png
