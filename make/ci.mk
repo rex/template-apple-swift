@@ -136,7 +136,10 @@ ci-shell:
 	fi; \
 	[ -n "$$files" ] || { echo "  no shell scripts found"; exit 0; }; \
 	echo "$$files" | tr '\n' ' ' | sed 's/^/  /'; echo ""; \
-	shellcheck -x $$files
+	# -S warning: gate on warning+error. Info/style notes (e.g. SC2015 in the
+	# skeleton-verbatim auto-lint.sh, which ADR-0008 forbids editing locally)
+	# are review signal, not build failures.
+	shellcheck -x -S warning $$files
 
 ## ci-ruby: `ruby -c` every fastlane configuration file
 ci-ruby:
