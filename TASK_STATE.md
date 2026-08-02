@@ -45,8 +45,20 @@ ownership: `specs/_build/file-ownership.md`.
       all six combos generate+verify · nine fastlane lanes register ·
       statusline <300ms. Ratified divergences + answers:
       specs/_build/questions-w2*.md (gate notes inline).
-- [ ] S4 — Integration 🟡 in-progress — NEXT: CHANGELOG entry, final
-      cross-ref sweep, push; then trigger verify-macos.
+- [x] S4 — Integration: DONE 2026-08-02. GitHub ci.yml run #4 GREEN
+      (all 9 jobs: generator tests, 6 combo matrix, make ci-linux 14 gates,
+      docs). Real-CI shakeout fixed: shellcheck severity calibration (-S
+      warning; skeleton-verbatim auto-lint.sh untouchable per ADR-0008) and
+      proved bump-per-commit live (0.1.1). apple-reviewer +
+      xcode-build-debugger agents registered live in-session.
+- [ ] S5 — Mac verification loop 🟡 in-progress — BLOCKED on dispatch
+      permission: this session's GitHub integration lacks Actions:write
+      (403 on workflow_dispatch). Pierce unblocks with EITHER
+      `gh workflow run verify-macos.yml --repo rex/template-apple-swift \
+      --ref claude/template-apple-swift-setup-b58nmp -f combo=all` from his
+      machine, OR granting the Claude GitHub App Actions write. Fable polls
+      for the run and drives compile failures to green with targeted fix
+      agents (xcode-build-debugger + owners per failing file).
 - [ ] S4 — Integration: cross-reference reconciliation, full Linux verification,
       version bump, CHANGELOG, push.
 - [ ] S5 — Mac verification loop: verify-macos matrix → green (fix agents on

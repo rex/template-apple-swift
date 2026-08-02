@@ -35,6 +35,13 @@ version bumps).
 
 ---
 
+## [0.1.2] — 2026-08-02 — Agent: Claude
+
+### Changed
+- TASK_STATE: S4 closed green (ci.yml run #4 all-jobs success on GitHub
+  runners); S5 Mac-verification loop opened with the dispatch-permission
+  handoff recorded.
+
 ## [0.1.1] — 2026-08-02 — Agent: Claude
 
 ### Fixed
