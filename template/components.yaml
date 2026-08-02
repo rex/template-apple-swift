@@ -1,0 +1,142 @@
+# Component registry — single source of truth for prune, docs generation, and
+# ASC bundle-ID bootstrap. SKELETON (groundwork): W2A finalizes owns/marker
+# lists against the real Wave-1 tree; IDs and dependency rules are FROZEN
+# (specs/_build/contracts.md §3).
+#
+# Field semantics (generator contract):
+#   requires:        component IDs that must also be enabled (violation = ERROR)
+#   owns.dirs:       directories deleted wholesale when component disabled
+#   owns.files:      individual files deleted when disabled
+#   include:         xcodegen/components/<file> removed (+ its include: line)
+#   marker_files:    files containing `// @template:<id> BEGIN/END` blocks to strip
+#   entitlements:    file -> keys removed from that entitlements plist when disabled
+#   infoplist:       file -> keys removed when disabled
+#   vibe:            JSON-pointer-ish paths set in VIBE.yaml `apple:` block
+#   asc:             bundle IDs + capabilities for fastlane bootstrap_asc lane
+#   docs_fragments:  template/docs/fragments/ files woven into generated docs
+
+schema_version: 0  # bumped to 1 by W2A with finalized file lists
+
+components:
+  mac:
+    requires: []
+    include: mac.yml
+    owns:
+      dirs: [MyAppMac]
+    marker_files: []
+    vibe: { platforms+: [macOS], universal_purchase: true }
+    asc:
+      bundle_ids: []   # shares com.example.myapp with iOS (Universal Purchase)
+      capabilities: [APP_GROUPS]
+  watch:
+    requires: []
+    include: watch.yml
+    owns:
+      dirs: [MyAppWatch]
+    marker_files:
+      - Shared/Sync/WatchSync.swift   # whole file? W2A decides file-vs-marker; prefer whole-file
+    vibe: { platforms+: [watchOS] }
+    asc:
+      bundle_ids: [com.example.myapp.watch]
+      capabilities: [APP_GROUPS]
+  complications:
+    requires: [watch]
+    include: complications.yml
+    owns:
+      dirs: [WatchComplications]
+    vibe: { extensions.watch_complications: true }
+    asc:
+      bundle_ids: [com.example.myapp.watch.complications]
+      capabilities: [APP_GROUPS]
+  widgets-home:
+    requires: []
+    include: widgets-home.yml
+    owns:
+      dirs: [HomeWidget]
+    vibe: { extensions.widget_kit: true }
+    asc:
+      bundle_ids: [com.example.myapp.homewidget]
+      capabilities: [APP_GROUPS]
+  widget-mac:
+    requires: [mac]
+    include: widget-mac.yml
+    owns:
+      dirs: [MacWidget]
+    vibe: { extensions.widget_kit: true }
+    asc:
+      bundle_ids: [com.example.myapp.macwidget]
+      capabilities: [APP_GROUPS]
+  live-activity:
+    requires: []
+    include: live-activity.yml
+    owns:
+      dirs: [LiveActivity]
+      files: [Shared/SessionActivityAttributes.swift]
+    marker_files:
+      - Shared/Store/CheckpointStore.swift
+      - MyApp/MyAppApp.swift
+    infoplist:
+      MyApp/Info.plist: [NSSupportsLiveActivities, NSSupportsLiveActivitiesFrequentUpdates]
+    vibe: { extensions.live_activity: true }
+    asc:
+      bundle_ids: [com.example.myapp.liveactivity]
+      capabilities: [APP_GROUPS]
+  nse:
+    requires: []
+    include: nse.yml
+    owns:
+      dirs: [NotificationService]
+      files: [MyApp/AppDelegate.swift]   # W2A verifies: delegate may be marker-gated instead
+    marker_files:
+      - MyApp/MyAppApp.swift
+    entitlements:
+      MyApp/MyApp.entitlements: [aps-environment]
+    infoplist:
+      MyApp/Info.plist: []               # background modes pruning finalized by W2A
+    vibe: { extensions.notification_service: true }
+    asc:
+      bundle_ids: [com.example.myapp.notificationservice]
+      capabilities: [APP_GROUPS, PUSH_NOTIFICATIONS]
+  swiftdata:
+    requires: []
+    owns:
+      files: [Shared/Store/SwiftDataCheckpointStore.swift, Shared/Models/CheckpointModel.swift]
+    marker_files:
+      - MyApp/MyAppApp.swift
+      - Shared/Store/CheckpointStore.swift
+    vibe: { persistence: swiftdata }     # disabled -> persistence: none
+  store:
+    requires: []
+    owns:
+      dirs: [Shared/Capabilities/Store]
+    marker_files:
+      - MyApp/Views/SettingsView.swift
+      - MyAppMac/MacRootView.swift
+    vibe: { monetization: iap }
+    asc:
+      capabilities: [IN_APP_PURCHASE]
+  account:
+    requires: []
+    owns:
+      dirs: [Shared/Capabilities/Account]
+    marker_files:
+      - MyApp/Views/SettingsView.swift
+      - MyAppMac/MacRootView.swift
+    entitlements:
+      MyApp/MyApp.entitlements: [com.apple.developer.applesignin, com.apple.developer.icloud-services, com.apple.developer.icloud-container-identifiers]
+      MyAppMac/MyAppMac.entitlements: [com.apple.developer.applesignin, com.apple.developer.icloud-services, com.apple.developer.icloud-container-identifiers]
+    vibe: { authentication: [sign_in_with_apple] }
+    asc:
+      capabilities: [SIGN_IN_WITH_APPLE, ICLOUD]
+  health:
+    requires: []
+    owns:
+      dirs: [Shared/Capabilities/Health]
+    marker_files:
+      - MyApp/Views/SettingsView.swift
+    entitlements:
+      MyApp/MyApp.entitlements: [com.apple.developer.healthkit]
+    infoplist:
+      MyApp/Info.plist: [NSHealthShareUsageDescription, NSHealthUpdateUsageDescription]
+    asc:
+      capabilities: [HEALTHKIT]
