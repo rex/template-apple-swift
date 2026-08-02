@@ -123,7 +123,10 @@ ci-vibe:
 	fi; \
 	python3 scripts/validate_vibe_yaml.py --skills-dir "$(SKELETON_SKILL)"
 
-## ci-shell: shellcheck every shell script in the repo
+## ci-shell: shellcheck every shell script in the repo.
+## Gates at -S warning: info/style notes (e.g. SC2015 in the skeleton-verbatim
+## auto-lint.sh, which ADR-0008 forbids editing locally) are review signal,
+## not build failures.
 ci-shell:
 	@if ! command -v shellcheck >/dev/null 2>&1; then \
 		echo "$(YELLOW)shellcheck not installed — shell lint skipped (uv tool install shellcheck-py).$(RESET)"; \
@@ -136,9 +139,6 @@ ci-shell:
 	fi; \
 	[ -n "$$files" ] || { echo "  no shell scripts found"; exit 0; }; \
 	echo "$$files" | tr '\n' ' ' | sed 's/^/  /'; echo ""; \
-	# -S warning: gate on warning+error. Info/style notes (e.g. SC2015 in the
-	# skeleton-verbatim auto-lint.sh, which ADR-0008 forbids editing locally)
-	# are review signal, not build failures.
 	shellcheck -x -S warning $$files
 
 ## ci-ruby: `ruby -c` every fastlane configuration file
