@@ -28,9 +28,14 @@ ownership: `specs/_build/file-ownership.md`.
       floors 18.0/15.0/11.0; op IS authed here (service account, agentic
       vault); spinnerVerbs+spinnerTipsOverride real at project scope;
       skeleton agents' tools: syntax defect (avoid).
-- [ ] S2 — Wave 1 superset app 🟡 in-progress — NEXT: W1A structure / W1B
-      Shared+Tests / W1C targets (Opus max, disjoint ownership).
-      Gate: Linux structural checks; Fable commits.
+- [x] S2 — Wave 1 superset app: W1A/W1B/W1C complete (3/3, 0 errors; 111
+      files). Gate DONE 2026-08-02: junction-include refactor (account.yml /
+      account-mac.yml / health.yml replace YAML markers — markers Swift-only),
+      onSnapshot fan-out wiring, WatchLink mac exclusion, components.yaml
+      updated, structural gate 0 FAIL. Resolutions:
+      specs/_build/gate-w1-resolutions.md.
+- [ ] S3a — Wave 2 machinery 🟡 in-progress — NEXT: W2A generator / W2B
+      fastlane / W2C build+CI / W2D agentic / W2E fun (Opus max, disjoint).
 - [ ] S3 — Wave 2 machinery: W2A generator / W2B fastlane / W2C build+CI /
       W2D agentic / W2E fun layer. Gate: ci-linux + generator pytest + 6 combo
       dry-runs; Fable commits.

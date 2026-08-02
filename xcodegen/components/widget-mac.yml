@@ -1,0 +1,51 @@
+# Component `widget-mac` — macOS Notification Center widget.
+# Requires component `mac`.
+# Prune: delete this file and its `include:` entry in project.yml.
+
+targets:
+  MacWidget:
+    templates: [WidgetExtension, MacTarget]
+    platform: macOS
+    deploymentTarget: '15.0'
+    sources:
+      - path: MacWidget
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "**/Info.plist"
+          - "**/*.entitlements"
+          - "**/PrivacyInfo.xcprivacy"
+      - path: MacWidget/PrivacyInfo.xcprivacy
+        type: file
+      - path: Shared/Sync/WidgetSync.swift
+      - path: Shared/Theme
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+      - path: Shared/Resources/Localizable.xcstrings
+        type: file
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp.macwidget
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.myapp
+        # A sandboxed host may only embed sandboxed extensions.
+        com.apple.security.app-sandbox: true
+
+  MyAppMac:
+    dependencies:
+      - target: MacWidget
+
+schemes:
+  MyAppMac:
+    build:
+      targets:
+        MacWidget: all

@@ -1,0 +1,51 @@
+# Component `complications` — watchOS complications (WidgetKit accessory
+# families; ClockKit is dead on watchOS 10+). Requires component `watch`.
+# Prune: delete this file and its `include:` entry in project.yml.
+
+targets:
+  WatchComplications:
+    templates: [WidgetExtension]
+    platform: watchOS
+    deploymentTarget: '11.0'
+    sources:
+      - path: WatchComplications
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "**/Info.plist"
+          - "**/*.entitlements"
+          - "**/PrivacyInfo.xcprivacy"
+      - path: WatchComplications/PrivacyInfo.xcprivacy
+        type: file
+      # Thin Shared subset: complications only read the App Group snapshot
+      # and render it with Theme tokens. Keeps the extension binary small.
+      - path: Shared/Sync/WidgetSync.swift
+      - path: Shared/Theme
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+      - path: Shared/Resources/Localizable.xcstrings
+        type: file
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp.watch.complications
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.myapp
+
+  MyAppWatch:
+    dependencies:
+      - target: WatchComplications
+
+schemes:
+  MyAppWatch:
+    build:
+      targets:
+        WatchComplications: all

@@ -1,0 +1,66 @@
+# Component `watch` — watchOS companion app.
+# Prune: delete this file and its `include:` entry in project.yml.
+
+targets:
+  MyAppWatch:
+    templates: [AppTarget]
+    platform: watchOS
+    deploymentTarget: '11.0'
+    sources:
+      - path: MyAppWatch
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "**/Info.plist"
+          - "**/*.entitlements"
+          - "**/PrivacyInfo.xcprivacy"
+      - path: MyAppWatch/PrivacyInfo.xcprivacy
+        type: file
+      - path: Shared
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "Capabilities/**"
+      - path: MyApp/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp.watch
+    info:
+      properties:
+        # watchOS falls back to PRODUCT_NAME without this, rendering as
+        # "MyAppWatch" in the watch app list and the iPhone Watch app.
+        CFBundleDisplayName: MyApp
+        # Single-target watch app (watchOS 9+). Without WKApplication the
+        # bundle is read as the legacy WatchKit app/extension pair.
+        WKApplication: true
+        # Tells the paired-watch auto-install flow which iPhone app this
+        # belongs to. Omitting it means the watch app silently never
+        # installs after the phone app does.
+        WKCompanionAppBundleIdentifier: com.example.myapp
+    entitlements:
+      # Required before the watch app reads the group: without it,
+      # exportArchive fails the phone/watch entitlement pairing check.
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.myapp
+
+  MyApp:
+    # Without this edge the watch app builds, signs and archives on its own
+    # but is NOT bundled inside the .ipa, so TestFlight installs deliver
+    # nothing to the paired watch.
+    dependencies:
+      - target: MyAppWatch
+
+schemes:
+  MyApp:
+    build:
+      targets:
+        MyAppWatch: all
+  MyAppWatch:
+    templates: [AppScheme]

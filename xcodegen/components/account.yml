@@ -1,0 +1,15 @@
+# Component: account (capability fragment — SIWA + CloudKit keys for the iOS
+# host; no target of its own). Included iff `account` is enabled. The macOS
+# half of these keys lives in account-mac.yml — a JUNCTION fragment included
+# only when BOTH `account` AND `mac` are enabled — because a fragment naming
+# targets.MyAppMac would break xcodegen whenever the mac component is pruned.
+targets:
+  MyApp:
+    entitlements:
+      properties:
+        com.apple.developer.applesignin:
+          - Default
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.example.myapp

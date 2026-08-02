@@ -202,16 +202,19 @@ Grammar (whole-line, exact):
 ```
 Marker blocks appear ONLY in files enumerated in `template/components.yaml`
 (`marker_files:` list, cap ≤8). Everything else a component owns is
-whole-file/whole-dir (preferred). Nesting forbidden. `template/tmpl/prune.py`
+whole-file/whole-dir (preferred). Nesting forbidden (blocks for DIFFERENT
+components may sit adjacent inside one closure — MyAppApp's onSnapshot fan-out
+does this; stripping any subset leaves compiling code). `template/tmpl/prune.py`
 strips blocks for disabled components; `verify.py` asserts no orphan markers.
 
-Expected marker files (wave agents may propose changes at gate review only):
-`MyApp/MyAppApp.swift` (ModelContainer/swiftdata; account env; nse APNs
-registration call), `MyApp/AppDelegate.swift` (nse), `MyApp/Views/SettingsView.swift`
-(store/account/health sections), `Shared/Store/CheckpointStore.swift`
-(swiftdata impl selection + live-activity notification),
-`MyAppMac/MacRootView.swift` (store/account sections), `Tests/MyAppTests/`
-component test files are whole-file owned (no markers in tests).
+**Markers are Swift-only.** The Wave-1 gate REJECTED a `#`-comment YAML marker
+grammar (W1A Q3): per-component YAML keys live in capability/junction include
+fragments instead (§6), so pruning YAML is always file-level. Actual marker
+files as built (Wave-1 gate, 2026-08-02): `MyApp/MyAppApp.swift` (swiftdata,
+nse, live-activity, watch), `Shared/Store/CheckpointStore.swift` (swiftdata),
+`MyApp/Views/SettingsView.swift` (store, account, health),
+`MyAppMac/MacRootView.swift` (store, account). Component test files are
+whole-file owned (no markers in tests).
 
 ## 6. project.yml composition (xcodegen-native, ADR-0006)
 
@@ -277,18 +280,24 @@ component test files are whole-file owned (no markers in tests).
   `SWIFT_APPROACHABLE_CONCURRENCY: YES` and
   `SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor`. XcodeGen pinned via
   `options.minimumXcodeGenVersion: '2.46.0'`.
-- Capability components that add **no target** (`swiftdata`, `store`,
-  `account`, `health`) need no `xcodegen/components/<id>.yml` at all. Their
-  source directories are declared once in the root spec as
+- Capability components that add no target AND no entitlement/Info keys
+  (`swiftdata`, `store`) need no `xcodegen/components/<id>.yml`. Their source
+  directories are declared once in the root spec as
   `{ path: Shared/Capabilities/<X>, optional: true }`, and the umbrella
   `Shared` source entry carries `excludes: ["Capabilities/**"]` so files are
-  never double-referenced. Pruning such a component is then exactly
-  `rm -rf Shared/Capabilities/<X>` plus its marker blocks — zero YAML edits.
-  Component `.yml` files exist only for the six target-bearing components
-  (`mac`, `watch`, `complications`, `widgets-home`, `widget-mac`,
-  `live-activity`, `nse`). (Exception to the one-owner rule: `account`'s
-  SIWA/iCloud entitlement keys ride marker-gated `entitlements.properties`
-  handled by W1A per the preferred-generation bullet.)
+  never double-referenced. Pruning them is `rm` + marker strips — zero YAML.
+- Capability components WITH entitlement/Info keys get **fragment-only include
+  files** (`account.yml`, `health.yml` — no targets, just `targets.<Host>`
+  property contributions), and cross-product keys get **junction fragments**
+  (`account-mac.yml`, included iff account ∧ mac) — a fragment naming
+  `targets.MyAppMac` when `mac` is pruned would break xcodegen, so neither
+  single-component file may own those lines. `template/components.yaml
+  includes:` maps every include file to its required components; the generator
+  keeps an entry iff ALL requires are enabled. Ten include files total: seven
+  target-bearing (`mac`, `watch`, `complications`, `widgets-home`,
+  `widget-mac`, `live-activity`, `nse`) + three capability/junction fragments.
+  (Gate note: this REPLACES both the Wave-1 `#`-form YAML markers and the
+  earlier "six target-bearing components" text.)
 - `Config/Versions.xcconfig`: `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION`
   ONLY — written by `ci_scripts/ci_post_clone.sh` / release lanes; never patched
   into project.yml. `Config/Shared.xcconfig`: `DEVELOPMENT_TEAM` (+ future

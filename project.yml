@@ -1,0 +1,295 @@
+# XcodeGen manifest — MyApp (committed superset).
+#
+# Composition (ADR-0006): this root spec owns options, setting groups,
+# templates, the always-on targets and the schemes. Every prunable
+# target-bearing component lives in xcodegen/components/<id>.yml, merged in
+# via `include:` at the bottom. Prune = delete that file + its include entry.
+#
+# Merge rules that constrain every edit here (XcodeGen 2.46.0, verified at
+# source): dictionaries recurse, arrays CONCATENATE with no deduplication,
+# and this root merges on top of the includes. So exactly one file may own
+# any given dependency edge / source entry / scheme entry, and root must
+# never restate what a component contributes.
+#
+# Every Info.plist and .entitlements here is GENERATED from the `info:` /
+# `entitlements:` blocks below on each `xcodegen generate`, and is gitignored
+# — editing one through Xcode's Signing & Capabilities editor is futile.
+# PrivacyInfo.xcprivacy is the one hand-authored plist: a bundled resource
+# rather than a managed plist, so neither block can express it.
+#
+# `# @template:<id> BEGIN/END` blocks are stripped by the generator when a
+# component is disabled. They exist ONLY for capability components that own
+# no component .yml (`account`, `health`); everything else prunes by file.
+
+name: MyApp
+
+options:
+  minimumXcodeGenVersion: '2.46.0'
+  createIntermediateGroups: true
+  groupSortPosition: top
+  groupOrdering:
+    - order: [MyApp, MyAppMac, MyAppWatch, Shared, Tests, UITests, Config, Products]
+  # Config/Versions.xcconfig is written by ci_post_clone / release lanes /
+  # `make bootstrap`; a fresh clone must still generate before it exists.
+  disabledValidations: [missingConfigFiles]
+  deploymentTarget:
+    iOS: '18.0'
+    macOS: '15.0'
+    watchOS: '11.0'
+  # Keeps Generated/BuildInfo.swift fresh for a bare `xcodegen` run. Guarded
+  # because a non-zero preGenCommand aborts generation and the script is
+  # absent in a repo whose owner removed the build-info seam.
+  preGenCommand: '[ -x scripts/apple/generate-build-info.sh ] && scripts/apple/generate-build-info.sh || true'
+
+fileGroups:
+  - README.md
+  - AGENTS.md
+  - Makefile
+  - project.yml
+  - Config
+  - fastlane
+
+settingGroups:
+  # DEVELOPMENT_TEAM, MARKETING_VERSION and CURRENT_PROJECT_VERSION are
+  # deliberately absent here and from every component file. An .xcconfig is
+  # the LOWEST layer of Xcode's build-setting precedence, so naming any of
+  # the three anywhere in YAML would silently beat the file CI writes.
+  common:
+    SWIFT_VERSION: '6.0'
+    SWIFT_APPROACHABLE_CONCURRENCY: 'YES'
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_EMIT_LOC_STRINGS: 'YES'
+    CODE_SIGN_STYLE: Automatic
+
+# Project-level xcconfig carries team-wide signing; the per-target layer
+# (Base template) carries the versions CI rewrites.
+configFiles:
+  Debug: Config/Shared.xcconfig
+  Release: Config/Shared.xcconfig
+
+targetTemplates:
+  Base:
+    configFiles:
+      Debug: Config/Versions.xcconfig
+      Release: Config/Versions.xcconfig
+    settings:
+      groups: [common]
+
+  # These two templates deliberately supply only the plist PATHS. Every
+  # target restates its own App Group, because (a) arrays concatenate, so a
+  # target that also declared it would ship the group twice, and (b) a
+  # `properties:` map left empty by pruning parses as null and fails
+  # generation. Eight explicit declarations, exactly as contracts §1 counts.
+  AppTarget:
+    templates: [Base]
+    type: application
+    info:
+      path: ${target_name}/Info.plist
+      properties:
+        ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: ${target_name}/${target_name}.entitlements
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  AppExtension:
+    templates: [Base]
+    type: app-extension
+    info:
+      path: ${target_name}/Info.plist
+    entitlements:
+      path: ${target_name}/${target_name}.entitlements
+    settings:
+      base:
+        SKIP_INSTALL: 'YES'
+
+  WidgetExtension:
+    templates: [AppExtension]
+    info:
+      path: ${target_name}/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  # Hardened runtime is a build setting; the matching App Sandbox key is an
+  # entitlement and is declared per macOS target.
+  MacTarget:
+    settings:
+      base:
+        ENABLE_HARDENED_RUNTIME: 'YES'
+
+schemeTemplates:
+  AppScheme:
+    build:
+      targets:
+        ${scheme_name}: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
+targets:
+  MyApp:
+    templates: [AppTarget]
+    platform: iOS
+    deploymentTarget: '18.0'
+    sources:
+      - path: MyApp
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "**/Info.plist"
+          - "**/*.entitlements"
+          - "**/PrivacyInfo.xcprivacy"
+          - "**/Generated/**"
+      - path: MyApp/PrivacyInfo.xcprivacy
+        type: file
+      # Written by scripts/apple/generate-build-info.sh, so it is absent on a
+      # fresh clone and must be referenced explicitly rather than discovered.
+      - path: MyApp/Generated/BuildInfo.swift
+        type: file
+        optional: true
+      - path: Shared
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "Capabilities/**"
+      # Capability components own these directories outright: pruning one is
+      # `rm -rf` with no YAML edit, which `optional: true` makes safe.
+      - path: Shared/Capabilities/Store
+        optional: true
+      - path: Shared/Capabilities/Account
+        optional: true
+      - path: Shared/Capabilities/Health
+        optional: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp
+    info:
+      properties:
+        CFBundleDisplayName: MyApp
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        # Paired with the checkpoint-refresh BGTask. Drop any mode you do not
+        # actually schedule before submitting — App Review checks.
+        BGTaskSchedulerPermittedIdentifiers: [com.example.myapp.refresh]
+        UIBackgroundModes: [fetch, processing]
+        # health-component usage strings merge in from
+        # xcodegen/components/health.yml (capability fragment).
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.myapp
+        # account/health entitlement keys merge in from
+        # xcodegen/components/{account,health}.yml (capability fragments) —
+        # keeping every component's keys in exactly one prunable file.
+
+  # Test bundles use Xcode's synthesised Info.plist: nothing in a test plist
+  # is component-mergeable, and generating one would write a file into the
+  # test tree for no benefit.
+  MyAppTests:
+    templates: [Base]
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: '18.0'
+    sources:
+      - path: Tests/MyAppTests
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp.tests
+        GENERATE_INFOPLIST_FILE: 'YES'
+    dependencies:
+      - target: MyApp
+
+  MyAppUITests:
+    templates: [Base]
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: '18.0'
+    sources:
+      - path: UITests
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp.uitests
+        GENERATE_INFOPLIST_FILE: 'YES'
+    dependencies:
+      - target: MyApp
+
+schemes:
+  MyApp:
+    templates: [AppScheme]
+    test:
+      gatherCoverageData: true
+      coverageTargets: [MyApp]
+      targets:
+        - name: MyAppTests
+          parallelizable: true
+  # UI tests double as the fastlane `snapshot` driver (ADR-0009 C10). They
+  # live in their own scheme so `make test` stays fast.
+  MyAppScreenshots:
+    build:
+      targets:
+        MyApp: all
+    test:
+      config: Debug
+      targets:
+        - name: MyAppUITests
+    archive:
+      config: Release
+
+# Swift Package dependencies go here. The key itself stays commented out: a
+# `packages:` key whose only content is comments parses as null and XcodeGen
+# fails with "Incorrect type". CocoaPods and Carthage are forbidden.
+# packages:
+#   SomePackage:
+#     url: https://github.com/owner/package.git
+#     from: 1.0.0
+
+# `relativePaths: false` is mandatory on every entry. The default (true)
+# re-roots every path in the included file at xcodegen/components/, which
+# silently breaks all sources, configFiles, entitlements, info and schemes.
+include:
+  - path: xcodegen/components/mac.yml
+    relativePaths: false
+  - path: xcodegen/components/watch.yml
+    relativePaths: false
+  - path: xcodegen/components/complications.yml
+    relativePaths: false
+  - path: xcodegen/components/widgets-home.yml
+    relativePaths: false
+  - path: xcodegen/components/widget-mac.yml
+    relativePaths: false
+  - path: xcodegen/components/live-activity.yml
+    relativePaths: false
+  - path: xcodegen/components/nse.yml
+    relativePaths: false
+  # Capability fragments (no targets of their own) — see each file's header.
+  # account-mac.yml is a JUNCTION: present iff account AND mac are enabled.
+  - path: xcodegen/components/account.yml
+    relativePaths: false
+  - path: xcodegen/components/account-mac.yml
+    relativePaths: false
+  - path: xcodegen/components/health.yml
+    relativePaths: false

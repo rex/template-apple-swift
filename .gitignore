@@ -60,3 +60,70 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# ---------------------------------------------------------------------------
+# template-apple-swift additions
+# ---------------------------------------------------------------------------
+
+# The Xcode project is a build artifact — xcodegen regenerates it verbatim
+# from project.yml (ADR-0002/ADR-0006). Never hand-edit, never commit.
+# Package.resolved is the SPM lockfile and MUST stay tracked, which needs the
+# full un-ignore chain below: git cannot re-include a file whose parent
+# directory is excluded.
+MyApp.xcodeproj/*
+!MyApp.xcodeproj/project.xcworkspace/
+MyApp.xcodeproj/project.xcworkspace/*
+!MyApp.xcodeproj/project.xcworkspace/xcshareddata/
+MyApp.xcodeproj/project.xcworkspace/xcshareddata/*
+!MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
+!MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+# Every Info.plist and .entitlements file here is written by
+# `xcodegen generate` from the info:/entitlements: blocks in project.yml and
+# xcodegen/components/*.yml. Committing one invites an edit that the next
+# generate silently reverts. PrivacyInfo.xcprivacy is hand-authored and stays.
+**/Info.plist
+**/*.entitlements
+
+# Machine-written source (scripts/apple/generate-build-info.sh).
+**/Generated/
+
+# Build output.
+DerivedData/
+build/
+*.xcarchive
+*.app
+*.xcresult
+*.profraw
+*.profdata
+
+# Runtime secrets. Pennywise shipped a bundled Environment.plist to a device
+# once; commit only the .example alongside it.
+Shared/Resources/Environment.plist
+.env
+.env.*
+!.env.example
+
+# Onboarding answers are per-clone.
+template/answers.local.yaml
+
+# Signing material — NEVER commit. .claude/settings.json additionally denies
+# reading these.
+AuthKey_*.p8
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+
+# CocoaPods and Carthage are forbidden; these entries exist to catch an
+# accidental reintroduction before it is committed.
+Podfile
+Podfile.lock
+Pods/
+Cartfile
+Cartfile.resolved
+
+# OS / editor noise.
+.DS_Store
+*.swp

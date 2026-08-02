@@ -1,26 +1,42 @@
 # Component registry — single source of truth for prune, docs generation, and
-# ASC bundle-ID bootstrap. SKELETON (groundwork): W2A finalizes owns/marker
-# lists against the real Wave-1 tree; IDs and dependency rules are FROZEN
-# (specs/_build/contracts.md §3).
+# ASC bundle-ID bootstrap. Gate-updated after Wave 1 (2026-08-02): owns lists
+# reflect the real tree; plist-key maps are GONE (all Info.plist/.entitlements
+# are xcodegen-generated, so per-component keys ride the include fragments in
+# xcodegen/components/ and prune with them). W2A validates owns lists against
+# `git ls-files` and bumps schema_version to 1.
 #
 # Field semantics (generator contract):
-#   requires:        component IDs that must also be enabled (violation = ERROR)
-#   owns.dirs:       directories deleted wholesale when component disabled
-#   owns.files:      individual files deleted when disabled
-#   include:         xcodegen/components/<file> removed (+ its include: line)
-#   marker_files:    files containing `// @template:<id> BEGIN/END` blocks to strip
-#   entitlements:    file -> keys removed from that entitlements plist when disabled
-#   infoplist:       file -> keys removed when disabled
-#   vibe:            JSON-pointer-ish paths set in VIBE.yaml `apple:` block
-#   asc:             bundle IDs + capabilities for fastlane bootstrap_asc lane
-#   docs_fragments:  template/docs/fragments/ files woven into generated docs
+#   requires:      component IDs that must also be enabled (violation = ERROR)
+#   owns.dirs:     directories deleted wholesale when component disabled
+#   owns.files:    individual files deleted when disabled
+#   marker_files:  files containing `// @template:<id> BEGIN/END` blocks to
+#                  strip (Swift-only grammar — YAML never carries markers)
+#   vibe:          paths set in VIBE.yaml `apple:` block when enabled
+#   asc:           bundle IDs + capability types for the bootstrap_asc lane
+#
+# `includes:` maps every xcodegen include file to the components it requires.
+# The generator keeps an include entry iff ALL its requires are enabled,
+# otherwise deletes the file AND its two-line entry in project.yml `include:`.
+# account-mac.yml is the junction pattern: cross-product keys (account × mac)
+# that no single-component file may own.
 
-schema_version: 0  # bumped to 1 by W2A with finalized file lists
+schema_version: 0
+
+includes:
+  mac.yml: [mac]
+  watch.yml: [watch]
+  complications.yml: [complications]
+  widgets-home.yml: [widgets-home]
+  widget-mac.yml: [widget-mac]
+  live-activity.yml: [live-activity]
+  nse.yml: [nse]
+  account.yml: [account]
+  account-mac.yml: [account, mac]
+  health.yml: [health]
 
 components:
   mac:
     requires: []
-    include: mac.yml
     owns:
       dirs: [MyAppMac]
     marker_files: []
@@ -30,69 +46,66 @@ components:
       capabilities: [APP_GROUPS]
   watch:
     requires: []
-    include: watch.yml
     owns:
       dirs: [MyAppWatch]
+      files:
+        - Shared/Sync/WatchSync.swift
+        - Shared/Sync/WatchLink.swift
     marker_files:
-      - Shared/Sync/WatchSync.swift   # whole file? W2A decides file-vs-marker; prefer whole-file
+      - MyApp/MyAppApp.swift
     vibe: { platforms+: [watchOS] }
     asc:
       bundle_ids: [com.example.myapp.watch]
       capabilities: [APP_GROUPS]
   complications:
     requires: [watch]
-    include: complications.yml
     owns:
       dirs: [WatchComplications]
+    marker_files: []
     vibe: { extensions.watch_complications: true }
     asc:
       bundle_ids: [com.example.myapp.watch.complications]
       capabilities: [APP_GROUPS]
   widgets-home:
     requires: []
-    include: widgets-home.yml
     owns:
       dirs: [HomeWidget]
+    marker_files: []
     vibe: { extensions.widget_kit: true }
     asc:
       bundle_ids: [com.example.myapp.homewidget]
       capabilities: [APP_GROUPS]
   widget-mac:
     requires: [mac]
-    include: widget-mac.yml
     owns:
       dirs: [MacWidget]
+    marker_files: []
     vibe: { extensions.widget_kit: true }
     asc:
       bundle_ids: [com.example.myapp.macwidget]
       capabilities: [APP_GROUPS]
   live-activity:
     requires: []
-    include: live-activity.yml
     owns:
       dirs: [LiveActivity]
-      files: [Shared/SessionActivityAttributes.swift]
+      files:
+        - Shared/SessionActivityAttributes.swift
+        - MyApp/Services/LiveActivityController.swift
+        - Tests/MyAppTests/ActivityAttributesTests.swift
     marker_files:
-      - Shared/Store/CheckpointStore.swift
       - MyApp/MyAppApp.swift
-    infoplist:
-      MyApp/Info.plist: [NSSupportsLiveActivities, NSSupportsLiveActivitiesFrequentUpdates]
     vibe: { extensions.live_activity: true }
     asc:
       bundle_ids: [com.example.myapp.liveactivity]
       capabilities: [APP_GROUPS]
   nse:
     requires: []
-    include: nse.yml
     owns:
       dirs: [NotificationService]
-      files: [MyApp/AppDelegate.swift]   # W2A verifies: delegate may be marker-gated instead
+      files:
+        - MyApp/AppDelegate.swift
     marker_files:
       - MyApp/MyAppApp.swift
-    entitlements:
-      MyApp/MyApp.entitlements: [aps-environment]
-    infoplist:
-      MyApp/Info.plist: []               # background modes pruning finalized by W2A
     vibe: { extensions.notification_service: true }
     asc:
       bundle_ids: [com.example.myapp.notificationservice]
@@ -100,7 +113,10 @@ components:
   swiftdata:
     requires: []
     owns:
-      files: [Shared/Store/SwiftDataCheckpointStore.swift, Shared/Models/CheckpointModel.swift]
+      files:
+        - Shared/Store/SwiftDataCheckpointStore.swift
+        - Shared/Models/CheckpointModel.swift
+        - Tests/MyAppTests/SwiftDataStoreTests.swift
     marker_files:
       - MyApp/MyAppApp.swift
       - Shared/Store/CheckpointStore.swift
@@ -122,9 +138,6 @@ components:
     marker_files:
       - MyApp/Views/SettingsView.swift
       - MyAppMac/MacRootView.swift
-    entitlements:
-      MyApp/MyApp.entitlements: [com.apple.developer.applesignin, com.apple.developer.icloud-services, com.apple.developer.icloud-container-identifiers]
-      MyAppMac/MyAppMac.entitlements: [com.apple.developer.applesignin, com.apple.developer.icloud-services, com.apple.developer.icloud-container-identifiers]
     vibe: { authentication: [sign_in_with_apple] }
     asc:
       capabilities: [SIGN_IN_WITH_APPLE, ICLOUD]
@@ -134,9 +147,6 @@ components:
       dirs: [Shared/Capabilities/Health]
     marker_files:
       - MyApp/Views/SettingsView.swift
-    entitlements:
-      MyApp/MyApp.entitlements: [com.apple.developer.healthkit]
-    infoplist:
-      MyApp/Info.plist: [NSHealthShareUsageDescription, NSHealthUpdateUsageDescription]
+    vibe: {}
     asc:
       capabilities: [HEALTHKIT]
