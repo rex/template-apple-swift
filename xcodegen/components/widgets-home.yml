@@ -1,0 +1,50 @@
+# Component `widgets-home` — iOS home-screen and lock-screen widgets.
+# Prune: delete this file and its `include:` entry in project.yml.
+
+targets:
+  HomeWidget:
+    templates: [WidgetExtension]
+    platform: iOS
+    deploymentTarget: '18.0'
+    sources:
+      - path: HomeWidget
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "**/Info.plist"
+          - "**/*.entitlements"
+          - "**/PrivacyInfo.xcprivacy"
+      - path: HomeWidget/PrivacyInfo.xcprivacy
+        type: file
+      # Thin Shared subset: widgets are read-only consumers of the App Group
+      # snapshot and never touch the store.
+      - path: Shared/Sync/WidgetSync.swift
+      - path: Shared/Theme
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+      - path: Shared/Resources/Localizable.xcstrings
+        type: file
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp.homewidget
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.myapp
+
+  MyApp:
+    dependencies:
+      - target: HomeWidget
+
+schemes:
+  MyApp:
+    build:
+      targets:
+        HomeWidget: all

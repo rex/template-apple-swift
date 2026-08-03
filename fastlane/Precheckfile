@@ -1,0 +1,35 @@
+# fastlane/Precheckfile — pre-submission metadata linting (`release` lane).
+#
+# precheck reads the metadata already on App Store Connect (not the local
+# .txt files) and flags things App Review rejects for: other platforms named
+# in the description, placeholder text, unreachable URLs, profanity, negative
+# sentiment about Apple, "free" claims next to in-app purchases.
+#
+# The `release` lane runs precheck as its own fail-fast step BEFORE deliver,
+# at :error level, so nothing is uploaded when the copy is going to bounce.
+
+app_identifier("com.example.myapp")
+
+# :error fails the lane · :warn prints and continues · :skip disables a rule.
+default_rule_level(:error)
+
+# precheck's in-app-purchase rules require an Apple-ID session and cannot run
+# with an App Store Connect API key (R1 V12). Leave this false.
+include_in_app_purchases(false)
+
+# Lint the version that is live rather than the one being edited.
+# use_live(false)
+
+# Per-rule overrides. Uncomment and set to :warn / :skip when a rule fires on
+# something legitimate (e.g. an app whose name genuinely contains "beta").
+#
+#   negative_apple_sentiment(level: :skip)
+#   placeholder_text(level: :error)
+#   other_platforms(level: :error)     # "also on Android" gets you rejected
+#   future_functionality(level: :warn) # "coming soon" gets you rejected
+#   test_words(level: :error)          # "test", "beta", "trial" in metadata
+#   curse_words(level: :error)
+#   free_stuff_in_iap(level: :error)
+#   unreachable_urls(level: :error)
+#   copyright_date(level: :warn)
+#   custom_text(data: ["Lorem ipsum"], level: :error)

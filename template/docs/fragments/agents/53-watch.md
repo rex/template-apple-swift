@@ -1,0 +1,1 @@
+- `{{app_name}}Watch/AGENTS.md` — watchOS companion

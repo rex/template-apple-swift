@@ -1,0 +1,64 @@
+# fastlane/Deliverfile — App Store metadata + screenshot upload defaults.
+#
+# The `metadata` and `release` lanes pass their run-specific flags explicitly
+# (submit_for_review, phased_release, platform, force, …). Only durable,
+# run-independent settings belong here, so `bundle exec fastlane deliver` by
+# hand still behaves sensibly and interactively.
+#
+# METADATA-AS-CODE LAYOUT (deliver's own directory schema — file names are
+# API, not a convention we invented):
+#
+#   fastlane/metadata/
+#     copyright.txt                  app-level
+#     primary_category.txt           app-level
+#     review_information/*.txt       App Review contact + demo account
+#     <locale>/name.txt              app-level, localised (max 30 chars)
+#     <locale>/subtitle.txt          app-level, localised (max 30 chars)
+#     <locale>/privacy_url.txt       app-level, localised
+#     <locale>/description.txt       VERSION-level (max 4000 chars)
+#     <locale>/keywords.txt          VERSION-level, comma separated, max 100
+#     <locale>/release_notes.txt     VERSION-level → "What's New"
+#     <locale>/promotional_text.txt  VERSION-level (max 170 chars)
+#     <locale>/support_url.txt       VERSION-level
+#     <locale>/marketing_url.txt     VERSION-level
+#
+# Locale directory names must match deliver's ALL_LANGUAGES list (`en-US`,
+# `de-DE`, `fr-FR`, …). `default/` is the fallback locale directory.
+#
+# SCREENSHOTS are matched by PIXEL RESOLUTION, never by folder or file name:
+#
+#   fastlane/screenshots/<locale>/*.png     (flat; sorted alphabetically)
+#
+#   1320×2868 → 6.9" iPhone   (APP_IPHONE_67 — Apple's required set)
+#   2064×2752 → 13" iPad      (APP_IPAD_PRO_3GEN_129 — required if iPad ships)
+#   1280×800 / 2880×1800 → Mac (APP_DESKTOP — hand-made, see §Screenshots
+#                               in docs/release-automation.md)
+#
+# Mac screenshots go in fastlane/screenshots-mac/<locale>/ because the Mac
+# platform is a separate deliver run against the same app record.
+
+app_identifier("com.example.myapp")
+
+# Never guess at a version — the lanes always target the version derived from
+# VERSION / Config/Versions.xcconfig (ADR-0007).
+skip_app_version_update(false)
+
+# App Review's IDFA and encryption questions, answered up front so no lane
+# ever blocks on an interactive prompt. Change these if the app really does
+# use the advertising identifier or non-exempt encryption.
+submission_information({
+                         add_id_info_uses_idfa: false,
+                         export_compliance_uses_encryption: false,
+                       })
+
+# precheck's in-app-purchase rules need an Apple-ID session and cannot run
+# with an API key.
+precheck_include_in_app_purchases(false)
+
+# Not enabled here, but worth knowing they exist:
+#   individual_metadata_items  upload one field at a time (pinpoints which
+#                              field App Store Connect rejected)
+#   app_previews_path          App Preview videos
+#   sync_screenshots           delete remote screenshots we no longer have
+#                              (beta; also needs
+#                              FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS=true)

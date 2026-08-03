@@ -1,0 +1,21 @@
+# fastlane/Appfile — identity defaults for every lane and tool.
+#
+# This is the tool-native home for the rename tokens (contracts §1); lanes and
+# Deliverfile/Snapfile/Matchfile inherit from here instead of repeating them.
+# The generator rewrites these strings during onboarding.
+
+app_identifier("com.example.myapp")
+team_id("ABCDE12345")
+
+# Everything below is Apple-ID-session territory and is deliberately unset —
+# this repo authenticates with an App Store Connect API key
+# (APP_STORE_CONNECT_API_KEY_ID / _ISSUER / _KEY, see .env.example).
+#
+# Only fill these in if you deliberately opt into the interactive Apple-ID
+# path documented in docs/asc-setup.md §7 (`fastlane spaceauth`, `produce`):
+#
+#   apple_id("you@example.com")   # Apple ID email (FASTLANE_USER)
+#   itc_team_id("123456789")      # App Store Connect team, when you're in many
+#   itc_team_name("Your Company")
+#
+# NEVER put a password, session cookie or key here. Appfile is committed.

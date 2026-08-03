@@ -1,0 +1,15 @@
+# JUNCTION fragment: included iff `account` AND `mac` are both enabled
+# (template/components.yaml `includes:` carries the requires list; the
+# generator prunes the include entry when either side is off). This is the
+# cross-product channel — neither account.yml (must not name MyAppMac) nor
+# mac.yml (must not carry account-gated keys) can own these lines alone.
+targets:
+  MyAppMac:
+    entitlements:
+      properties:
+        com.apple.developer.applesignin:
+          - Default
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.example.myapp

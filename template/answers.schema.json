@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "template-apple-swift/answers/v1",
+  "title": "template-apple-swift onboarding answers (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["identity", "components"],
+  "properties": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["app_name", "bundle_root", "team_id"],
+      "properties": {
+        "app_name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]{1,29}$",
+          "description": "PascalCase Swift identifier; becomes target/dir/type prefix"
+        },
+        "display_name": { "type": "string", "minLength": 1, "maxLength": 30 },
+        "bundle_root": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9-]*)+$",
+          "description": "iOS+macOS app bundle ID (Universal Purchase shares it)"
+        },
+        "team_id": { "type": "string", "pattern": "^[A-Z0-9]{10}$" }
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mac": { "type": "boolean", "default": false },
+        "watch": { "type": "boolean", "default": false },
+        "complications": { "type": "boolean", "default": false },
+        "widgets-home": { "type": "boolean", "default": true },
+        "widget-mac": { "type": "boolean", "default": false },
+        "live-activity": { "type": "boolean", "default": false },
+        "nse": { "type": "boolean", "default": false },
+        "swiftdata": { "type": "boolean", "default": true },
+        "store": { "type": "boolean", "default": false },
+        "account": { "type": "boolean", "default": false },
+        "health": { "type": "boolean", "default": false }
+      },
+      "description": "Dependency rules enforced by generator (ERROR, not auto-fix): complications=>watch, widget-mac=>mac"
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ios": { "type": "string", "pattern": "^\\d+\\.\\d+$", "default": "18.0" },
+        "macos": { "type": "string", "pattern": "^\\d+\\.\\d+$", "default": "15.0" },
+        "watchos": { "type": "string", "pattern": "^\\d+\\.\\d+$", "default": "11.0" }
+      },
+      "description": "Floors; R2-verified Aug-2026 defaults form one Sept-2024 OS cohort (generator warns on mixed cohorts); documented 'modern' preset = 26.0/26.0/26.0"
+    },
+    "ops": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ci_system": { "enum": ["xcode_cloud", "github_actions", "none"], "default": "xcode_cloud" },
+        "signing": { "enum": ["automatic", "match"], "default": "automatic" },
+        "frameit": { "type": "boolean", "default": false, "description": "frameit needs ImageMagick + community frames" },
+        "spinner_flavor": { "type": "boolean", "default": true, "description": "write spinnerVerbs + spinnerTipsOverride into .claude/settings.json" },
+        "statusline": { "type": "boolean", "default": false, "description": "wire .claude/statusline.sh (a project statusLine replaces a personal one — opt in)" },
+        "autonomy": { "enum": ["continue-until-blocked", "interactive"], "default": "continue-until-blocked" },
+        "squash_history": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}

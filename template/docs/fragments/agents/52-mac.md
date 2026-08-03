@@ -1,0 +1,1 @@
+- `{{app_name}}Mac/AGENTS.md` — macOS app target

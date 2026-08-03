@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Privacy manifest — required by App Review for every binary in the
+        bundle since 2024-05-01, extensions included. Under-declaring a
+        required-reason API is what gets an upload rejected, so each target
+        ships its own copy of this file.
+
+        Hand-authored rather than generated: a privacy manifest is a bundled
+        resource, not a managed plist, so xcodegen's `info:` / `entitlements:`
+        blocks cannot express it.
+
+        Add an NSPrivacyCollectedDataTypes entry the moment this app starts
+        collecting anything.
+    -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- CA92.1: App Group container shared with this app's own
+                     extensions. 1C8F.1: this app's own preferences. -->
+                <string>CA92.1</string>
+                <string>1C8F.1</string>
+            </array>
+        </dict>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- 35F9.1: measuring elapsed time on-device. -->
+                <string>35F9.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

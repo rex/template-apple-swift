@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Environment.example.plist — tracked template for Shared/Env/Environment.plist.
+
+  Copy it:  cp Shared/Env/Environment.example.plist Shared/Env/Environment.plist
+
+  Environment.plist is gitignored and bundled into every target that needs it.
+  Every key is optional: Env falls back to a scheme/CI environment variable and
+  then to a compiled-in default (see Shared/Env/Env.swift for the order).
+
+  This file ends up inside the .ipa and is readable by anyone who downloads it.
+  Endpoints and feature flags only — never an API key, token, or password.
+  Runtime credentials belong in the Keychain (Shared/Capabilities/Account).
+-->
+<plist version="1.0">
+<dict>
+    <!-- Surfaces sample content so the app demos without a backend. -->
+    <key>DEMO_MODE</key>
+    <false/>
+
+    <!-- Empty means "no backend"; the app runs local-only. -->
+    <key>API_BASE_URL</key>
+    <string></string>
+</dict>
+</plist>

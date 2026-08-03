@@ -1,0 +1,8 @@
+// Team-wide signing settings, applied at the project level.
+//
+// This is the ONLY file that names DEVELOPMENT_TEAM. An .xcconfig is the
+// lowest layer of Xcode's build-setting precedence, so the same key written
+// into project.yml or any xcodegen/components/*.yml would silently win over
+// this file. Onboarding rewrites exactly one line here.
+
+DEVELOPMENT_TEAM = ABCDE12345

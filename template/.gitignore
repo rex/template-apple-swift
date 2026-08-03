@@ -1,0 +1,7 @@
+# Python byte-code and pytest state produced by the generator's own test suite.
+# Scoped to template/ so the root .gitignore (W1A's file) stays untouched, and
+# so `git ls-files --others --exclude-standard` — how the generator decides
+# what to copy — never picks them up.
+__pycache__/
+*.py[cod]
+.pytest_cache/

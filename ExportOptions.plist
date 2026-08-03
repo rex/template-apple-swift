@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ExportOptions.plist — App Store export options for `xcodebuild -exportArchive`.
+
+  WHY THIS FILE EXISTS AT ALL
+  gym regenerates an export-options plist on every run and unconditionally
+  overwrites `method`, `teamID`, `signingStyle`, `uploadSymbols` and
+  `uploadBitcode`, so for the fastlane path this file is advisory. It is
+  committed for the OTHER path: the manual / verify-macos
+  `xcodebuild -exportArchive -exportOptionsPlist ExportOptions.plist`
+  fallback. fastlane's `assert_export_options` private lane fails the build
+  if this file and the lane disagree, so the two can never drift.
+
+  ⚠️ LEGACY METHOD SPELLING IS MANDATORY.
+  Xcode 15 renamed `app-store` → `app-store-connect` and `ad-hoc` →
+  `release-testing`, and still accepts the old names with a warning. gym does
+  NOT: gym/lib/gym/options.rb whitelists exactly
+
+      app-store validation ad-hoc package enterprise development
+      developer-id mac-application
+
+  and FastlaneCore::Configuration#set runs that whitelist against the `method`
+  key it reads back out of this plist. A plist saying `app-store-connect`
+  therefore aborts every gym run with
+  "Unsupported export_method 'app-store-connect'". Use `app-store` here and
+  `developer-id` for the notarised-Mac export (the `notarize` lane passes that
+  as a parameter rather than shipping a second plist).
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store</string>
+
+	<key>teamID</key>
+	<string>ABCDE12345</string>
+
+	<!-- Upload dSYMs so App Store Connect can symbolicate crash reports. -->
+	<key>uploadSymbols</key>
+	<true/>
+
+	<!-- Bitcode has been dead since Xcode 14; keep it explicit and off. -->
+	<key>uploadBitcode</key>
+	<false/>
+
+	<!--
+	  Build numbers come from ADR-0007 (`git rev-list --count HEAD`, written
+	  into Config/Versions.xcconfig). Letting Xcode "manage" them here would
+	  silently rewrite MARKETING_VERSION/CURRENT_PROJECT_VERSION at export
+	  time and desynchronise the tag from the build.
+	-->
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+
+	<!--
+	  Automatic (cloud) signing. The `beta` lane threads
+	  -allowProvisioningUpdates plus the ASC key through gym's xcargs and
+	  export_xcargs so the export can mint what it needs. Switch to `manual`
+	  only alongside `ops.signing: match`, and then add
+	  provisioningProfiles (bundle id → profile name) below.
+	-->
+	<key>signingStyle</key>
+	<string>automatic</string>
+
+	<key>stripSwiftSymbols</key>
+	<true/>
+
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>

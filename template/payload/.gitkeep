@@ -1,0 +1,3 @@
+# W2B delivers release.yml into this directory. The generator copies it to
+# .github/workflows/release.yml when ops.ci_system is github_actions, and
+# self-destructs the whole template/ tree afterwards either way.

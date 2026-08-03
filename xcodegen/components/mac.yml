@@ -1,0 +1,69 @@
+# Component `mac` — macOS app.
+# Prune: delete this file and its `include:` entry in project.yml.
+
+targets:
+  MyAppMac:
+    templates: [AppTarget, MacTarget]
+    platform: macOS
+    deploymentTarget: '15.0'
+    sources:
+      - path: MyAppMac
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "**/Info.plist"
+          - "**/*.entitlements"
+          - "**/PrivacyInfo.xcprivacy"
+      - path: MyAppMac/PrivacyInfo.xcprivacy
+        type: file
+      - path: Shared
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "Capabilities/**"
+          # WatchConnectivity does not exist on macOS. (WatchLink is also
+          # canImport-guarded — this exclusion keeps the target list honest.)
+          - "**/WatchSync.swift"
+          - "**/WatchLink.swift"
+      - path: Shared/Capabilities/Store
+        optional: true
+      - path: Shared/Capabilities/Account
+        optional: true
+      # Universal Purchase shares one catalog with iOS; AppIcon.appiconset
+      # carries the `mac` idiom entries alongside the iOS ones.
+      - path: MyApp/Assets.xcassets
+    settings:
+      base:
+        # Identical to the iOS bundle ID on purpose: App Store Connect then
+        # resolves one app record with two platforms. Different IDs split it
+        # into two apps and break paid / IAP entitlement transfer.
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp
+    info:
+      properties:
+        CFBundleDisplayName: MyApp
+        LSApplicationCategoryType: public.app-category.productivity
+    entitlements:
+      properties:
+        # macOS also accepts a `<TeamID>.group.…` form for App Groups. Mixing
+        # the two spellings across targets is what breaks cross-process
+        # reads, so the single unprefixed string from contracts §1 is used
+        # on every platform.
+        com.apple.security.application-groups:
+          - group.com.example.myapp
+        # App Sandbox is required for Mac App Store distribution and pairs
+        # with ENABLE_HARDENED_RUNTIME from the MacTarget template.
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        # account-component SIWA/iCloud keys merge in from
+        # xcodegen/components/account-mac.yml — a junction fragment included
+        # only when BOTH account AND mac are enabled.
+
+schemes:
+  MyAppMac:
+    templates: [AppScheme]

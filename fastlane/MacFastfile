@@ -1,0 +1,100 @@
+# fastlane/MacFastfile — macOS archive, Mac TestFlight, notarisation.
+#
+# Imported by fastlane/Fastfile. Both lanes live in `platform :ios` (there is
+# no `platform :mac` block — contracts §8) and gate on the `mac` component
+# internally, passing `platform: "osx"` where the ASC API needs it.
+#
+# Universal Purchase means ONE ASC record and ONE bundle ID shared with iOS,
+# so `mac_beta` uploads against APP_ID with app_platform "osx".
+
+platform :ios do
+  desc "Archive the macOS app and ship it to TestFlight (Mac App Store)."
+  desc "Options: changelog:'…'"
+  lane :mac_beta do |options|
+    require_mac_component
+    require_macos
+    icon_preflight
+    assert_export_options(method: "app-store")
+    prepare_signing
+
+    xcargs = signing_xcargs
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME_MAC,
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: EXPORT_OPTIONS,
+      xcargs: xcargs,
+      export_xcargs: xcargs,
+      output_directory: BUILD_DIR,
+      clean: true,
+      include_symbols: true,
+      xcodebuild_formatter: "xcbeautify",
+    )
+    # An app-store export of a macOS target produces a .pkg, which is what
+    # pilot wants (`pkg:`); the iOS path uses `ipa:`.
+    pilot(
+      api_key: api_key,
+      app_identifier: APP_ID,
+      app_platform: "osx",
+      pkg: lane_context[SharedValues::PKG_OUTPUT_PATH],
+      changelog: options[:changelog] || changelog_text,
+      skip_waiting_for_build_processing: false,
+      distribute_external: false,
+      submit_beta_review: false,
+      uses_non_exempt_encryption: false,
+    )
+  end
+
+  # EXPECTED WARNING — do not "fix" it by renaming this lane:
+  #
+  #   Name of the lane 'notarize' is already taken by the action named 'notarize'
+  #
+  # fastlane prints that once per invocation because a core action shares the
+  # name. It is cosmetic. `fastlane notarize` on the CLI resolves the LANE
+  # (LaneManager looks up runner.lanes), while `notarize(...)` inside a lane
+  # resolves the ACTION (Runner#trigger_action_by_name checks actions first),
+  # so there is no recursion and no ambiguity. The lane name is frozen API
+  # (contracts §8) — renaming it breaks `make notarize-mac` and the docs.
+  desc "Build a Developer ID macOS app and notarise it with notarytool."
+  desc "Options: package:'path/to/App.app|.pkg|.dmg' to notarise something else."
+  lane :notarize do |options|
+    require_mac_component
+    require_macos
+    if ENV["MATCH_GIT_URL"].to_s.empty?
+      UI.important("Developer ID certificates are NOT cloud-managed, so an ephemeral " \
+                   "runner needs `certs` (match) or a manually imported .p12 first — " \
+                   "see docs/release-automation.md §Signing.")
+    end
+    prepare_signing
+
+    xcargs = signing_xcargs
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME_MAC,
+      configuration: "Release",
+      export_method: "developer-id", # legacy spelling; gym's whitelist
+      xcargs: xcargs,
+      export_xcargs: xcargs,
+      output_directory: BUILD_DIR,
+      clean: true,
+      xcodebuild_formatter: "xcbeautify",
+    )
+
+    package = options[:package] ||
+              lane_context[SharedValues::PKG_OUTPUT_PATH] ||
+              Dir[repo_path(BUILD_DIR, "*.app")].first ||
+              Dir[repo_path(BUILD_DIR, "*.dmg")].first
+    UI.user_error!("Nothing to notarise in #{BUILD_DIR}/") if package.nil?
+
+    # notarize shells `xcrun notarytool` and writes the key to a Tempfile
+    # itself; there is no Apple-ID path here. It needs a TEAM key —
+    # Individual ASC keys cannot notarise (R1 V21). Stapling runs by default.
+    notarize(
+      package: package,
+      bundle_id: APP_ID,
+      api_key: api_key,
+      print_log: true,
+    )
+  end
+end

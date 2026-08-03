@@ -1,0 +1,271 @@
+# VIBE.yaml — durable repo policy.
+#
+# Schema:    agentic-skeleton/references/vibe-yaml-schema.md
+#            + lang-swift-apple/vibe-schema-fragment.yaml   (`apple:`)
+#            + tool-ci/vibe-schema-fragment.yaml            (`ci:`)
+# Validator: scripts/validate_vibe_yaml.py  (hard-requires check-jsonschema)
+#
+# This is the TEMPLATE's own policy AND the superset a generated repo starts
+# from. `template/tmpl/vibe.py` retunes individual keys at onboarding through
+# line surgery — it never rewrites the file, because the comments here ARE the
+# policy documentation. Anything omitted is hydrated from the skeleton
+# defaults; a key is spelled out below only when the default is wrong for an
+# Apple repo or when the explicit value is load-bearing.
+
+kind: vibe-policy
+schema_version: 1
+
+project:
+  name: MyApp
+  # greenfield = new repo still scaffolding; brownfield = existing repo.
+  # A repo stamped from this template is brand new by construction.
+  lifecycle: greenfield
+  # Stable stack id composable skills key off. One Xcode project, many
+  # platforms — iOS + macOS + watchOS app targets plus their extensions.
+  stack: swift-apple-universal
+
+  # Append-only decision log. IDs survive across docs; full text in docs/adr/.
+  decisions:
+    - id: D-health
+      date: "2026-08-02"
+      decided_by: "@pierce"
+      summary: >-
+        The /api/health contract is NOT APPLICABLE to this repo.
+      rationale: >-
+        agentic-skeleton makes /api/health universal for services. These are
+        native Apple clients with no HTTP surface of their own, so there is
+        nothing to expose it on. The equivalent health surface is MetricKit
+        (MXMetricManager payloads) plus the BuildInfo diagnostics screen.
+        Recorded rather than silently skipped so the gap reads as a decision.
+        See docs/adr/0009-walking-skeleton-and-gates.md (C9).
+      status: locked
+    - id: D-CI
+      date: "2026-08-02"
+      decided_by: "@pierce"
+      summary: >-
+        ci.runner_pattern is setup-actions, not the tool-ci default of docker.
+      rationale: >-
+        tool-ci defaults to a Dockerfile.ci carrying the toolchain, which
+        cannot host Xcode — Apple ships no Linux SDK and no licensable Xcode
+        container. Linux gates therefore run directly on the runner, and
+        compile truth lives in the manual-dispatch macOS matrix
+        (.github/workflows/verify-macos.yml) instead of in every push.
+        See docs/adr/0003-ci-posture.md.
+      status: locked
+
+workflow:
+  # continue-until-blocked = run autonomously until a stop condition is hit.
+  # This repo's slices are long (generate → xcodegen → xcodebuild) and pausing
+  # between them wastes the expensive part.
+  default_autonomy_mode: continue-until-blocked
+  # Commit and push each finished slice, then keep going. Paired with the
+  # per-commit version bump below, history stays reviewable slice by slice.
+  default_slice_completion_behavior: commit-push-and-continue
+  validation_command: make validate
+  final_verification_command: make check-if-the-agent-can-consider-this-task-completed
+  # No Dockerfile belongs in an Apple app repo; keep the guard on anyway so an
+  # agent has to ask before inventing one.
+  ask_before_dockerizing: true
+
+quality_gates:
+  lint:
+    required: true
+    command: make lint
+  typecheck:
+    required: true
+    command: make typecheck
+  tests:
+    # required = active gate. Unlike the reference Pennywise repo, this
+    # template ships real Swift Testing coverage from birth.
+    mode: required
+    # `make test` is xcodebuild — macOS only. `make ci-linux` is the
+    # container-side gate (structure, generator pytest, shell + Python
+    # linters); it is what runs on Linux and in cloud sessions, and it is
+    # NOT a weaker rerun of the test suite. Neither substitutes for the
+    # other: a slice is done when both have run on a machine that can run
+    # them. See docs/adr/0003-ci-posture.md.
+    command: make test
+    required_suites: []
+    coverage:
+      enabled: false
+      minimum_percentage: null
+  clean_worktree_required_on_completion: true
+
+architecture:
+  check_command: make check-architecture
+  # scope_globs is OMITTED on purpose (ADR-0009 C8) — the gate is OPT-OUT and
+  # scans every source file minus the exclusions below. An allowlist would
+  # silently stop covering any directory a future component adds, and this
+  # repo renames its directories at onboarding.
+  exclude_globs:
+    # Construction machinery (self-destructs at onboarding) + repo tooling —
+    # each has its own quality bar (pytest / ruff); the module gate targets
+    # app modules, not utilities. Gate-w2 resolution.
+    - "template/**/*"
+    - "scripts/sync_spinner_verbs.py"
+    - "**/*.generated.*"
+    - "**/Pods/**"
+    - "**/Carthage/**"
+    - "**/.build/**"
+    - "**/DerivedData/**"
+    # Binary assets + asset catalogs — line-counting them is meaningless
+    # (compressed PNG/font/audio data contains newline bytes).
+    - "**/*.xcassets/**"
+    - "**/*.png"
+    - "**/*.jpg"
+    - "**/*.jpeg"
+    - "**/*.gif"
+    - "**/*.webp"
+    - "**/*.svg"
+    - "**/*.pdf"
+    - "**/*.ico"
+    - "**/*.icns"
+    - "**/*.woff"
+    - "**/*.woff2"
+    - "**/*.ttf"
+    - "**/*.otf"
+    - "**/*.caf"
+    # Machine-owned Apple artifacts.
+    - "**/Generated/**"
+    - "**/*.xcstrings"
+    - "**/*.xcodeproj/**"
+    # Vendored verbatim from fastlane (v1.30) so it stays diffable against
+    # upstream; 315 lines of someone else's code is not our god-file.
+    - "UITests/MyAppUITests/SnapshotHelper.swift"
+    # Captured by `fastlane snapshot`, never hand-written.
+    - "fastlane/screenshots/**"
+    # Vendored verbatim from agentic-skeleton. We cannot split them without
+    # forking the skeleton, and a fork would silently stop receiving fixes.
+    # Both exceed max_public_functions_per_module upstream; excluded here so
+    # the gate reports OUR code, not someone else's. Re-check on every
+    # `make sync-skeleton`.
+    - "scripts/skill_checks.py"
+    - "scripts/validate_vibe_yaml.py"
+  max_lines_per_file:
+    soft: 250    # warning only — refactor trigger
+    hard: 400    # blocking failure
+  max_public_functions_per_module: 8
+
+docs:
+  # All four are load-bearing here: session-start.sh and inject-state.sh read
+  # TASK_STATE.md, and check_docs.py additionally requires CLAUDE.md to be a
+  # SYMLINK to AGENTS.md (it is; GEMINI.md is the second symlink).
+  agents_md_required: true
+  claude_md_required: true
+  task_state_required: true
+  vibe_yaml_required: true
+
+reporting:
+  completion_report:
+    required: true
+    format: markdown-table
+    detail_level: compact
+
+security:
+  # forbidden = pre-commit rejects any committed secret. This repo handles
+  # App Store Connect keys (.p8), certificates (.p12) and provisioning
+  # profiles; .claude/settings.json additionally denies Read on all of them.
+  secrets_in_files: forbidden  # pragma: allowlist secret
+
+versioning:
+  enabled: true
+  style: semver
+  # Plain semver, one line (ADR-0007). MARKETING_VERSION is derived from it
+  # into Config/Versions.xcconfig by CI and by `make bootstrap` — never
+  # written into project.yml, where it would silently outrank the xcconfig.
+  #
+  # Bump sizing (standing directive, Pierce 2026-08-03): patch is reserved
+  # for INARGUABLY TRIVIAL doc-only changes. Every other change — fixes,
+  # features, scripts, config, CI — bumps MINOR. When in doubt, minor.
+  file: VERSION
+  initial: "0.1.0"
+  bump_required_per_commit: true
+  changelog_path: CHANGELOG.md
+  tag_prefix: "v"
+
+# ── lang-swift-apple namespace ───────────────────────────────────────────
+# Shipped as the SUPERSET: every component is on. The generator turns these
+# off key by key from the answers file (template/components.yaml `vibe:`).
+apple:
+  platforms: [iOS, macOS, watchOS]
+  # One OS cohort (September 2024) across all three, which is what makes the
+  # floors mutually consistent. A `modern` preset (26.0/26.0/26.0) exists for
+  # apps that hard-adopt OS-26 design APIs.
+  deployment_targets:
+    ios: "18.0"
+    macos: "15.0"
+    watchos: "11.0"
+  # A LANGUAGE MODE, not a toolchain version: there is no "6.2"/"6.3" value.
+  # The toolchain itself is Xcode 26.6 / Swift 6.3.
+  swift_version: "6.0"
+  swift_concurrency_mode: complete
+  ui_toolkit: swiftui
+  persistence: swiftdata
+  concurrency_style: async_await
+  test_framework:
+    unit: swift_testing
+    ui: xcuitest
+    snapshot: none
+  # project.yml is the source of truth; MyApp.xcodeproj is a build artifact
+  # and is never hand-edited or committed.
+  project_generator: xcodegen
+  package_manager: spm
+  # Hand-authored PrivacyInfo.xcprivacy in every bundle — the one plist the
+  # generator cannot express, and required for App Store submission.
+  privacy_manifest: required
+  app_intents: present
+  localization: string_catalogs
+  authentication: [sign_in_with_apple]
+  monetization: iap
+  observability: metrickit
+  docc: present
+  # iOS and macOS share one PRODUCT_BUNDLE_IDENTIFIER, so App Store Connect
+  # treats them as one app with two binaries. True iff the `mac` component is
+  # enabled.
+  universal_purchase: true
+  distribution:
+    app_store: true
+    outside_store_mac: false
+    ci_system: xcode_cloud
+  code_signing: automatic
+  extensions:
+    widget_kit: true
+    watch_complications: true
+    live_activity: true
+    notification_service: true
+    intents: true
+    share: false
+
+# ── tool-ci namespace ────────────────────────────────────────────────────
+ci:
+  platform: github
+  # See project.decisions D-CI: docker cannot host Xcode.
+  runner_pattern: setup-actions
+  pin_actions_to_sha: true
+  required_checks: [lint, typecheck, ci-linux, validate]
+
+# Applied-skill provenance — which skills shaped this repo, at what version.
+# Re-stamp with `make stamp-skill SKILL=<id>`; never hand-edit.
+#
+# Versions are the skills' VERSION files, which is what stamp_skill.py writes
+# and check_skills.py compares against. Several skills carry a STALER
+# `version:` in their SKILL.md frontmatter (lang-swift-apple says 0.3.0,
+# agentic-skeleton 0.2.0, tool-ci 0.1.0) — that field is documentation and is
+# not the provenance authority. Do not "correct" these to match frontmatter.
+skills:
+  - id: agentic-skeleton
+    version: "0.44.0"
+    applied: "2026-08-02"
+    source: scaffold
+  - id: lang-swift-apple
+    version: "0.4.0"
+    applied: "2026-08-02"
+    source: scaffold
+  - id: tool-ci
+    version: "0.7.1"
+    applied: "2026-08-02"
+    source: scaffold
+  - id: template-apple-swift
+    version: "0.1.0"
+    applied: "2026-08-02"
+    source: scaffold

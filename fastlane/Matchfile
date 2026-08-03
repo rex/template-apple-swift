@@ -1,0 +1,52 @@
+# fastlane/Matchfile — shared code-signing identities (OPT-IN, off by default).
+#
+# This file is intentionally ALL COMMENTS. `ops.signing: automatic` is the
+# default (contracts §9): App Store builds sign themselves because Xcode 13+
+# cloud-managed DISTRIBUTION certificates keep the private key with Apple, so
+# an ephemeral CI runner needs no keychain material at all (R1 V20). The
+# `certs` lane refuses to run until MATCH_GIT_URL is set.
+#
+# Turn match on when you hit one of these:
+#
+#   * Developer ID / notarised Mac builds. Developer ID certs are NOT
+#     cloud-managed — this is the strongest reason to adopt match.
+#   * More than one human or machine needs the same signing identity.
+#   * You want signing state to be reviewable and revocable in one repo.
+#
+# HOW TO TURN IT ON
+#
+#   1. Create a PRIVATE git repo for the encrypted certs (never public).
+#   2. Set in .env / CI secrets (match reads these env names natively):
+#        MATCH_GIT_URL=git@github.com:you/certificates.git
+#        MATCH_PASSWORD=<the passphrase that encrypts the repo>
+#   3. Run once, interactively, on a Mac:
+#        bundle exec fastlane certs readonly:false
+#   4. Set ops.signing: match in your answers file so onboarding docs agree.
+#   5. CI stays readonly — the `certs` lane defaults `readonly` to `is_ci`,
+#      and setup_ci forces it anyway. CI must never mint certificates.
+#
+# The `certs` lane passes type / app_identifier / readonly explicitly, so the
+# only thing this file would add is durable storage configuration. Uncomment
+# what you need:
+#
+#   git_url(ENV["MATCH_GIT_URL"])
+#   git_branch("main")
+#   storage_mode("git")          # git | google_cloud | s3 | gitlab_secure_files
+#   type("appstore")             # appstore | adhoc | development | developer_id
+#   app_identifier(["com.example.myapp"])
+#   team_id("ABCDE12345")
+#   readonly(true)
+#   platform("ios")              # ios | macos | tvos
+#
+# Non-git backends (no certs repo to manage):
+#
+#   storage_mode("google_cloud")
+#   google_cloud_bucket_name("my-certificates")
+#   google_cloud_keys_file("path/to/keys.json")      # gitignored, never committed
+#
+#   storage_mode("s3")
+#   s3_bucket("my-certificates")
+#   s3_region("us-east-1")
+#
+# NEVER put MATCH_PASSWORD, a private key, or a certs-repo deploy key in this
+# file. It is committed. Secrets live in the environment / 1Password only.

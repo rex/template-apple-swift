@@ -1,0 +1,354 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "spinnerVerbs": {
+    "mode": "append",
+    "verbs": [
+      "Xcodegenerating",
+      "Xcodegenning",
+      "Re-xcodegening",
+      "Regenerating",
+      "Recompiling",
+      "Typechecking",
+      "Monomorphizing",
+      "Devirtualizing",
+      "Inlining",
+      "Hoisting",
+      "Deriving",
+      "Segfaulting",
+      "Deadlocking",
+      "Actor-isolating",
+      "Sendabling",
+      "Awaiting",
+      "Unwrapping",
+      "Force-unwrapping",
+      "Nil-coalescing",
+      "Optionaling",
+      "Retaining",
+      "Leaking",
+      "Autoreleasing",
+      "Swiftening",
+      "Symbolicating",
+      "Instrumenting",
+      "Profiling",
+      "Clean-building",
+      "Derived-nuking",
+      "Resolving SPM",
+      "Scheme-hunting",
+      "Target-wrangling",
+      "Plist-wrangling",
+      "Marker-stripping",
+      "Token-renaming",
+      "Componentizing",
+      "Supersetting",
+      "Pruning",
+      "Simctl-ing",
+      "Booting sims",
+      "Blaming Xcode",
+      "Blaming SwiftUI",
+      "Blaming the SDK",
+      "Appeasing Xcode",
+      "Praying to Xcode",
+      "Codesigning",
+      "Provisioning",
+      "Entitling",
+      "Sandboxing",
+      "Hardening",
+      "Archiving",
+      "Notarizing",
+      "Stapling",
+      "Bundling",
+      "Universalizing",
+      "Sideloading",
+      "TestFlighting",
+      "App-Reviewing",
+      "Resubmitting",
+      "Appeasing",
+      "Grovelling",
+      "Rejecting",
+      "Cert-rotating",
+      "Cert-expiring",
+      "Profile-hunting",
+      "Keychain-poking",
+      "ITMS-90347-ing",
+      "Exit-70-ing",
+      "Radar-filing",
+      "Feedback-filing",
+      "Sherlocking",
+      "Skeuomorphing",
+      "Couraging",
+      "Dongling",
+      "Dongle-buying",
+      "Cable-hunting",
+      "Genius-barring",
+      "Wallet-draining",
+      "Keynoting",
+      "WWDC-hyping",
+      "Beta-installing",
+      "Bricking",
+      "iCloud-syncing",
+      "Airdropping",
+      "Handoffing",
+      "Magsafing",
+      "Genmojiing",
+      "Siri-baiting",
+      "Widgetizing",
+      "Complicating",
+      "Islanding",
+      "Live-Activating",
+      "Silent-pushing",
+      "APNs-poking",
+      "WCSession-ing",
+      "65KB-dropping",
+      "Bezeling",
+      "Notching",
+      "Fastlaning",
+      "Gymming",
+      "Piloting",
+      "Delivering",
+      "Matching",
+      "Spaceshipping",
+      "Snapshotting",
+      "Frameiting",
+      "Prechecking",
+      "Bundle-exec-ing",
+      "Gem-installing",
+      "Pod-avoiding",
+      "Greenlighting",
+      "Shipping",
+      "Shipping MyApp",
+      "Merging",
+      "Rebasing",
+      "Squashing",
+      "Cherry-picking",
+      "Bisecting",
+      "Reverting",
+      "Blaming",
+      "Tagging",
+      "Force-pushing",
+      "Speedrunning",
+      "Yeeting",
+      "Sending it",
+      "Full-sending",
+      "Cowboying",
+      "Prod-poking",
+      "Hail-Marying",
+      "Manifesting",
+      "Praying",
+      "Hallucinating",
+      "Confabulating",
+      "Overthinking",
+      "Underthinking",
+      "Ultrathinking",
+      "Token-burning",
+      "Context-cramming",
+      "Compacting",
+      "Sandbagging",
+      "Sycophanting",
+      "Apologizing",
+      "Gaslighting",
+      "Pretending",
+      "Subagenting",
+      "Yapping",
+      "Glazing",
+      "Cooking",
+      "Locking in",
+      "Goblin-moding",
+      "Big-braining",
+      "Doomscrolling",
+      "Doomposting",
+      "Unfucking",
+      "Refuckoring",
+      "Clusterfucking",
+      "Fuckarounding",
+      "Finding out",
+      "Fucking about",
+      "Pissing about",
+      "Cocking it up",
+      "Shitposting",
+      "Bullshitting",
+      "Half-assing",
+      "Whole-assing",
+      "Ass-covering",
+      "Shit-canning",
+      "Dicking around",
+      "Going balls-out",
+      "Hard-launching",
+      "Thirst-trapping",
+      "Brown-nosing",
+      "Edging",
+      "Rage-quitting",
+      "Bodging",
+      "Kludging",
+      "Yolo-ing",
+      "Bikeshedding",
+      "Yak-shaving",
+      "Nerdsniping",
+      "Spelunking",
+      "Jury-rigging",
+      "Duct-taping",
+      "Hand-waving",
+      "Finagling",
+      "Wrangling",
+      "Noodling",
+      "Marinating",
+      "Percolating",
+      "Ruminating",
+      "Incanting",
+      "Summoning",
+      "Divining",
+      "Sacrificing"
+    ]
+  },
+  "spinnerTipsOverride": {
+    "excludeDefault": false,
+    "tips": [
+      "make validate is lint + typecheck + architecture + version + skills. make verify adds docs, pre-commit and tests.",
+      "No Xcode on this machine? make ci-linux is the whole gate chain you can actually run — and say so instead of reporting a build you never saw.",
+      "project.yml is the source of truth. MyApp.xcodeproj is a build artifact: never open it to change a setting, never commit it, run make regenerate.",
+      "Info.plist and .entitlements are generated from the info:/entitlements: blocks in YAML and are gitignored. Editing one on disk edits a file xcodegen is about to delete.",
+      "Every include: entry needs relativePaths: false. The string form re-roots every path in the included file at xcodegen/components/.",
+      "Included specs merge additively and arrays concatenate with NO deduplication. Exactly one file may own any dependency edge, source entry, or scheme entry.",
+      ".xcconfig is the LOWEST layer of Xcode's build-setting precedence. DEVELOPMENT_TEAM, MARKETING_VERSION and CURRENT_PROJECT_VERSION live in Config/*.xcconfig and nowhere else.",
+      "Simulator names are runner-image coupled. Use scripts/apple/pick-simulator.sh instead of hardcoding \"iPhone 15\" and watching CI fail on the macos-26 image.",
+      "Files are 250 lines soft, 400 hard, enforced by make check-architecture. Split by responsibility, not by line count.",
+      "An extension's bundle ID is its host's ID plus EXACTLY one dot-segment. Two segments is an ITMS-90347 rejection at upload, not at build.",
+      "The watch app must be a dependencies: entry on the iOS app, or it is silently absent from the .ipa with no build error at all.",
+      "MyAppWatch needs the App Group entitlement before it ever reads the group — without it exportArchive fails with exit 70 and a useless message.",
+      "Every widget and complication view calls .containerBackground(_:for: .widget), or the system renders an \"adopt containerBackground\" placeholder instead of your widget.",
+      "NSSupportsLiveActivities goes in the HOST app's Info.plist. Putting it in the LiveActivity extension's plist does nothing, quietly.",
+      "Guard ActivityKit with #if os(iOS), never #if canImport(ActivityKit) — the module imports fine on macOS and then the types are not there.",
+      "WidgetFamily.accessoryCorner is watchOS-only. Listing it in an iOS or macOS supportedFamilies array fails to compile on the Xcode 26 SDK.",
+      "WCSession payloads cap out around 65 KB and updateApplicationContext keeps only the latest value. Send a small summary, never a history.",
+      "Silent pushes are rate-budgeted by iOS and dropped without warning. A user-visible payload with mutable-content: 1, handled by the NSE, is the reliable path.",
+      "Every type carries @MainActor or nonisolated explicitly. Nothing here relies on SWIFT_DEFAULT_ACTOR_ISOLATION, so the sources compile the same under both defaults.",
+      "@Observable plus @State/@Environment only. ObservableObject, @Published, @StateObject and @EnvironmentObject are gate-checked out of this repo.",
+      "Design values come from Theme (Theme.color/font/spacing/radius). A hex literal or a .font(.system(size:)) in a view is a review failure.",
+      "CheckpointStore is the only mutation path, and every mutation writes through WidgetSync. A view that mutates state directly has skipped the widget bridge.",
+      "Lane names are the API; make targets are just a memorable verb. make testflight runs fastlane beta, make release runs fastlane release.",
+      "Drop a 1024x1024 master icon in before make testflight. The beta lane preflights the icon well and fails early rather than after a 12-minute archive.",
+      "bootstrap_asc cannot create the app record, the App Group, or an iCloud container — Apple has no API for those. docs/asc-setup.md is the manual residue.",
+      "Never set PILOT_DISTRIBUTE_EXTERNAL in .env. distribute_external and submit_beta_review share that one variable with opposite defaults.",
+      "make bootstrap needs xcodegen and therefore a Mac. On Linux, run make ci-linux and let .github/workflows/verify-macos.yml do the compiling.",
+      "Subagent tools: takes tool NAMES only. Writing Bash(git diff:*) there silently strips Bash entirely — narrow it with permissions.allow instead.",
+      "Command allowed-tools: DOES take permission-rule syntax. The asymmetry with subagent tools: is deliberate and it bites everyone once.",
+      "Custom spinner verbs need Claude Code v2.1.144+. Below that they leak into the past-tense turn-completion line and read like a stroke.",
+      "disableAllHooks: true disables the status line too — the setting name undersells its blast radius.",
+      "make spinner-check fails when settings.json drifts from the corpus .txt files. make spinner-sync is the fix; do not hand-edit the JSON arrays.",
+      "The three MCP servers stay at \"pending approval\" until you accept the workspace-trust dialog once, interactively.",
+      "Xcode's first error is rarely the error. The error is three lines up and one target over.",
+      "rm -rf ~/Library/Developer/Xcode/DerivedData is not a fix, is not a diagnosis, and works often enough that you will keep doing it.",
+      "The Team ID belongs in exactly one file. You are still going to paste it into three, and the xcconfig will lose to all of them.",
+      "The generator is one-shot on purpose. Commit before --apply, because --dry-run is the only undo that exists."
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.sh",
+            "args": [],
+            "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start-apple.sh",
+            "args": [],
+            "timeout": 20,
+            "statusMessage": "Checking Apple toolchain"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/inject-state.sh",
+            "args": [],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/bash-guard.sh",
+            "args": []
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/auto-lint.sh",
+            "args": []
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "if": "Edit(**/*.swift)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/auto-lint-swift.sh",
+            "args": [],
+            "async": true,
+            "asyncRewake": true,
+            "timeout": 120,
+            "statusMessage": "Formatting Swift"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-compact-apple.sh",
+            "args": []
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-gate.sh",
+            "args": []
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(terraform apply:*)",
+      "Bash(terraform destroy:*)",
+      "Bash(terraform state rm:*)",
+      "Bash(terraform state push:*)",
+      "Bash(terraform force-unlock:*)",
+      "Bash(kubectl delete ns:*)",
+      "Bash(git push --force:*)",
+      "Read(./fastlane/.env*)",
+      "Read(**/AuthKey_*.p8)",
+      "Read(**/*.mobileprovision)",
+      "Read(**/*.p12)"
+    ]
+  }
+}

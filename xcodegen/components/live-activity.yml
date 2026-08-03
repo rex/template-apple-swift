@@ -1,0 +1,57 @@
+# Component `live-activity` — Live Activity / Dynamic Island widget
+# extension, driven by `Activity.update(...)` from the iOS host.
+# Prune: delete this file and its `include:` entry in project.yml.
+
+targets:
+  LiveActivity:
+    templates: [WidgetExtension]
+    platform: iOS
+    deploymentTarget: '18.0'
+    sources:
+      - path: LiveActivity
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "**/Info.plist"
+          - "**/*.entitlements"
+          - "**/PrivacyInfo.xcprivacy"
+      - path: LiveActivity/PrivacyInfo.xcprivacy
+        type: file
+      # The attributes type must be in both compile units — host and
+      # extension — for ActivityKit to match the activity.
+      - path: Shared/SessionActivityAttributes.swift
+      - path: Shared/Sync/WidgetSync.swift
+      - path: Shared/Theme
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+      - path: Shared/Resources/Localizable.xcstrings
+        type: file
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp.liveactivity
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.myapp
+
+  MyApp:
+    dependencies:
+      - target: LiveActivity
+    info:
+      # Both keys belong to the HOST app, never to the extension.
+      properties:
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
+
+schemes:
+  MyApp:
+    build:
+      targets:
+        LiveActivity: all

@@ -1,0 +1,61 @@
+# Component `nse` — Notification Service Extension. Wakes on every
+# mutable-content alert push and mirrors state into the App Group, which is
+# how widgets stay fresh without spending the ~2-3/hour silent-push budget.
+# Prune: delete this file and its `include:` entry in project.yml.
+
+targets:
+  NotificationService:
+    templates: [AppExtension]
+    platform: iOS
+    deploymentTarget: '18.0'
+    sources:
+      - path: NotificationService
+        excludes:
+          - "**/AGENTS.md"
+          - "**/README.md"
+          - "**/CLAUDE.md"
+          - "**/GEMINI.md"
+          - "**/.DS_Store"
+          - "**/Info.plist"
+          - "**/*.entitlements"
+          - "**/PrivacyInfo.xcprivacy"
+      - path: NotificationService/PrivacyInfo.xcprivacy
+        type: file
+      # Writing the App Group is the whole job; nothing else is needed.
+      - path: Shared/Sync/WidgetSync.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp.notificationservice
+    info:
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.usernotifications.service
+          # Omitting the principal class is the classic "the extension never
+          # fires" bug — iOS has nothing to instantiate.
+          NSExtensionPrincipalClass: '$(PRODUCT_MODULE_NAME).NotificationService'
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.myapp
+
+  MyApp:
+    dependencies:
+      - target: NotificationService
+    entitlements:
+      properties:
+        # Left at `development`: automatic signing swaps in `production`
+        # when it resolves a distribution profile. The extension itself does
+        # NOT get this entitlement — push rides the host.
+        aps-environment: development
+    info:
+      # Concatenated onto the host's own background modes by XcodeGen's
+      # additive array merge, so pruning this file removes exactly this one.
+      properties:
+        UIBackgroundModes:
+          - remote-notification
+
+schemes:
+  MyApp:
+    build:
+      targets:
+        NotificationService: all

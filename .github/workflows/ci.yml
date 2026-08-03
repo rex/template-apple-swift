@@ -1,0 +1,107 @@
+# ci — everything that can be proved on a free Linux runner (ADR-0003).
+#
+# macOS runners bill ~10x Linux minutes, so this workflow never compiles the
+# app. Compile truth lives in verify-macos.yml, dispatched on demand and always
+# before a template version tag.
+#
+# Two of the jobs below only make sense while this repo IS the template; they
+# sit between whole-line markers that the generator strips at onboarding (see
+# the note inside them). The `gates` and `docs` jobs survive into every
+# generated repo and are the CI that app actually keeps.
+name: ci
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: 'ci-${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Ruby on Linux needs a UTF-8 locale or fastlane's own files fail to parse
+  # (contracts §8). `make ci-linux` runs `ruby -c` over them.
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+
+jobs:
+  # >>> template-ci
+  #
+  # Everything between these two whole-line markers is deleted by
+  # template/tmpl/workflows.py when this repo is generated into an app — a
+  # generated repo has no template/ left to test. The marker text is exact and
+  # load-bearing; do not reword, indent-shift or nest it.
+  generator-tests:
+    name: generator unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: pytest
+        run: uv run --with pytest,pyyaml -m pytest template/tests -q
+
+  combos:
+    name: 'combo: ${{ matrix.combo }}'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The six frozen configurations. Same list as verify-macos.yml, which
+        # compiles what this job only checks structurally.
+        combo:
+          - superset
+          - minimal
+          - ios-widgets-la
+          - ios-watch
+          - universal
+          - no-health
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: generate
+        env:
+          COMBO: '${{ matrix.combo }}'
+        run: |
+          uv run template/generate.py \
+            --answers "template/ci-combos/${COMBO}.yaml" \
+            --dest "${RUNNER_TEMP}/gen-${COMBO}"
+      - name: verify the generated tree
+        env:
+          COMBO: '${{ matrix.combo }}'
+        run: uv run template/verify.py --root "${RUNNER_TEMP}/gen-${COMBO}"
+  # <<< template-ci
+
+  gates:
+    name: linux gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # check-version-bumped diffs VERSION against HEAD~, and
+          # write-versions.sh counts commits: both need real history.
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: ensure shellcheck
+        run: |
+          command -v shellcheck >/dev/null 2>&1 && exit 0
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+      # One command, and it is the repo's own: CI can never drift into a
+      # reimplementation of the gates (ADR-0003).
+      - name: make ci-linux
+        run: make ci-linux
+
+  docs:
+    name: docs consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: required collaboration files
+        run: make check-docs
+      - name: relative markdown links resolve
+        run: make check-links

@@ -1,0 +1,155 @@
+# Component registry — single source of truth for prune, docs generation, and
+# ASC bundle-ID bootstrap. Gate-updated after Wave 1 (2026-08-02): owns lists
+# reflect the real tree; plist-key maps are GONE (all Info.plist/.entitlements
+# are xcodegen-generated, so per-component keys ride the include fragments in
+# xcodegen/components/ and prune with them). W2A validates owns lists against
+# `git ls-files` and bumps schema_version to 1.
+#
+# Field semantics (generator contract):
+#   requires:      component IDs that must also be enabled (violation = ERROR)
+#   owns.dirs:     directories deleted wholesale when component disabled
+#   owns.files:    individual files deleted when disabled
+#   marker_files:  files containing `// @template:<id> BEGIN/END` blocks to
+#                  strip (Swift-only grammar — YAML never carries markers)
+#   vibe:          paths set in VIBE.yaml `apple:` block when enabled
+#   asc:           bundle IDs + capability types for the bootstrap_asc lane
+#
+# `includes:` maps every xcodegen include file to the components it requires.
+# The generator keeps an include entry iff ALL its requires are enabled,
+# otherwise deletes the file AND its two-line entry in project.yml `include:`.
+# account-mac.yml is the junction pattern: cross-product keys (account × mac)
+# that no single-component file may own.
+
+# Bumped to 1 by W2A after `manifest.validate_against_tree()` confirmed every
+# owns/marker_files/includes path against the real tree. The generator refuses
+# any other value: a registry it cannot interpret must never prune silently.
+schema_version: 1
+
+includes:
+  mac.yml: [mac]
+  watch.yml: [watch]
+  complications.yml: [complications]
+  widgets-home.yml: [widgets-home]
+  widget-mac.yml: [widget-mac]
+  live-activity.yml: [live-activity]
+  nse.yml: [nse]
+  account.yml: [account]
+  account-mac.yml: [account, mac]
+  health.yml: [health]
+
+components:
+  mac:
+    requires: []
+    owns:
+      dirs: [MyAppMac]
+    marker_files: []
+    vibe: { platforms+: [macOS], universal_purchase: true }
+    asc:
+      bundle_ids: []   # shares com.example.myapp with iOS (Universal Purchase)
+      capabilities: [APP_GROUPS]
+  watch:
+    requires: []
+    owns:
+      dirs: [MyAppWatch]
+      files:
+        - Shared/Sync/WatchSync.swift
+        - Shared/Sync/WatchLink.swift
+    marker_files:
+      - MyApp/MyAppApp.swift
+    vibe: { platforms+: [watchOS] }
+    asc:
+      bundle_ids: [com.example.myapp.watch]
+      capabilities: [APP_GROUPS]
+  complications:
+    requires: [watch]
+    owns:
+      dirs: [WatchComplications]
+    marker_files: []
+    vibe: { extensions.watch_complications: true }
+    asc:
+      bundle_ids: [com.example.myapp.watch.complications]
+      capabilities: [APP_GROUPS]
+  widgets-home:
+    requires: []
+    owns:
+      dirs: [HomeWidget]
+    marker_files: []
+    vibe: { extensions.widget_kit: true }
+    asc:
+      bundle_ids: [com.example.myapp.homewidget]
+      capabilities: [APP_GROUPS]
+  widget-mac:
+    requires: [mac]
+    owns:
+      dirs: [MacWidget]
+    marker_files: []
+    vibe: { extensions.widget_kit: true }
+    asc:
+      bundle_ids: [com.example.myapp.macwidget]
+      capabilities: [APP_GROUPS]
+  live-activity:
+    requires: []
+    owns:
+      dirs: [LiveActivity]
+      files:
+        - Shared/SessionActivityAttributes.swift
+        - MyApp/Services/LiveActivityController.swift
+        - Tests/MyAppTests/ActivityAttributesTests.swift
+    marker_files:
+      - MyApp/MyAppApp.swift
+    vibe: { extensions.live_activity: true }
+    asc:
+      bundle_ids: [com.example.myapp.liveactivity]
+      capabilities: [APP_GROUPS]
+  nse:
+    requires: []
+    owns:
+      dirs: [NotificationService]
+      files:
+        - MyApp/AppDelegate.swift
+    marker_files:
+      - MyApp/MyAppApp.swift
+    vibe: { extensions.notification_service: true }
+    asc:
+      bundle_ids: [com.example.myapp.notificationservice]
+      capabilities: [APP_GROUPS, PUSH_NOTIFICATIONS]
+  swiftdata:
+    requires: []
+    owns:
+      files:
+        - Shared/Store/SwiftDataCheckpointStore.swift
+        - Shared/Models/CheckpointModel.swift
+        - Tests/MyAppTests/SwiftDataStoreTests.swift
+    marker_files:
+      - MyApp/MyAppApp.swift
+      - Shared/Store/CheckpointStore.swift
+    vibe: { persistence: swiftdata }     # disabled -> persistence: none
+  store:
+    requires: []
+    owns:
+      dirs: [Shared/Capabilities/Store]
+    marker_files:
+      - MyApp/Views/SettingsView.swift
+      - MyAppMac/MacRootView.swift
+    vibe: { monetization: iap }
+    asc:
+      capabilities: [IN_APP_PURCHASE]
+  account:
+    requires: []
+    owns:
+      dirs: [Shared/Capabilities/Account]
+    marker_files:
+      - MyApp/Views/SettingsView.swift
+      - MyAppMac/MacRootView.swift
+    vibe: { authentication: [sign_in_with_apple] }
+    asc:
+      capabilities: [APPLE_ID_AUTH, ICLOUD]   # ASC API type for Sign in with Apple (W2B Q1)
+  health:
+    requires: []
+    owns:
+      dirs: [Shared/Capabilities/Health]
+    marker_files:
+      - MyApp/Views/SettingsView.swift
+    vibe: {}
+    asc:
+      capabilities: [HEALTHKIT]

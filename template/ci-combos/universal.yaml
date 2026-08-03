@@ -1,0 +1,40 @@
+# CI combo: universal
+#
+# iPhone + Mac with widgets on both. Exercises Universal Purchase (one
+# bundle ID, two platforms) and the widget-mac-requires-mac rule.
+#
+# Consumed by template/tests/test_combos.py and by the verify-macos
+# matrix. Schema: template/answers.schema.json.
+
+identity:
+  app_name: MyApp
+  display_name: "MyApp"
+  bundle_root: com.example.myapp
+  team_id: ABCDE12345
+
+components:
+  mac: true
+  watch: false
+  complications: false
+  widgets-home: true
+  widget-mac: true
+  live-activity: false
+  nse: false
+  swiftdata: true
+  store: false
+  account: false
+  health: false
+
+deployment:
+  ios: "18.0"
+  macos: "15.0"
+  watchos: "11.0"
+
+ops:
+  ci_system: github_actions
+  signing: automatic
+  frameit: false
+  spinner_flavor: true
+  statusline: true
+  autonomy: continue-until-blocked
+  squash_history: false

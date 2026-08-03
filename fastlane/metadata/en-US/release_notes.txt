@@ -1,0 +1,6 @@
+First release.
+
+This file is the single source of truth for release notes: the `beta` lane
+reads it for TestFlight's "What to Test", and `metadata` / `release` upload it
+as the App Store "What's New". Rewrite it every version — do not let it drift
+into "bug fixes and improvements".

@@ -1,0 +1,16 @@
+# Component: health (capability fragment — contributes to the iOS host only;
+# no target of its own). Included iff `health` is enabled: the generator prunes
+# this file plus its `include:` entry per template/components.yaml `includes:`.
+#
+# HealthKit keys must ride the generated host plists (Q2: all Info.plist /
+# .entitlements are xcodegen-generated), and include deep-merge is the only
+# channel that adds keys without editing another component's file.
+targets:
+  MyApp:
+    info:
+      properties:
+        NSHealthShareUsageDescription: MyApp reads Health samples so a session can show your activity alongside its checkpoints.
+        NSHealthUpdateUsageDescription: MyApp writes completed sessions to Health so they appear with the rest of your activity.
+    entitlements:
+      properties:
+        com.apple.developer.healthkit: true

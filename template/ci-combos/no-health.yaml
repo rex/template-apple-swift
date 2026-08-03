@@ -1,0 +1,41 @@
+# CI combo: no-health
+#
+# Everything except HealthKit, plus both commercial capabilities. The
+# widest realistic shipping shape, and the one that proves the account x mac
+# junction fragment survives while the health fragment is pruned.
+#
+# Consumed by template/tests/test_combos.py and by the verify-macos
+# matrix. Schema: template/answers.schema.json.
+
+identity:
+  app_name: MyApp
+  display_name: "MyApp"
+  bundle_root: com.example.myapp
+  team_id: ABCDE12345
+
+components:
+  mac: true
+  watch: true
+  complications: true
+  widgets-home: true
+  widget-mac: true
+  live-activity: true
+  nse: true
+  swiftdata: true
+  store: true
+  account: true
+  health: false
+
+deployment:
+  ios: "18.0"
+  macos: "15.0"
+  watchos: "11.0"
+
+ops:
+  ci_system: xcode_cloud
+  signing: match
+  frameit: true
+  spinner_flavor: true
+  statusline: false
+  autonomy: continue-until-blocked
+  squash_history: false
