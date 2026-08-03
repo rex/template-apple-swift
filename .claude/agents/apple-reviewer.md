@@ -57,8 +57,9 @@ spec must not restate what a component contributes. No
 is the lowest precedence layer, so the same key in YAML silently wins and the
 xcconfig looks broken.
 
-**5. Contracts fidelity.** `specs/_build/contracts.md` (while it exists) and
-the shapes it freezes: bundle-ID arithmetic (extension ID = host + exactly one
+**5. Contracts fidelity.** The frozen construction shapes (now canonical in
+`.claude/rules/swift.md` + `CONVENTIONS.md`; the original construction
+contracts live in git history): bundle-ID arithmetic (extension ID = host + exactly one
 segment), the watch app as a `dependencies:` entry on the iOS app,
 `NSSupportsLiveActivities` in the *host* plist, `#if os(iOS)` around
 ActivityKit rather than `canImport`, `accessoryCorner` as watchOS-only,

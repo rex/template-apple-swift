@@ -6,8 +6,9 @@
 
 - **Project**: `template-apple-swift` — the template itself, un-onboarded.
 - **Stack**: swift-apple-universal (iOS + macOS + watchOS + 5 extensions).
-- **State**: superset tree + machinery. No app has been stamped from this
-  checkout.
+- **State**: construction COMPLETE (v0.8.0). verify-macos run #7: all six
+  combos green end-to-end — build (10 targets), Swift Testing, XCUITest
+  smoke. No app has been stamped from this checkout.
 
 ## If you are here to USE the template
 

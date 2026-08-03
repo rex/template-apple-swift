@@ -23,7 +23,8 @@ answers rather than silent gaps.
    while it runs. `CheckpointStore` (@Observable, @MainActor) is the single
    mutation path; every surface (views, widgets, Live Activity, complications,
    watch, Mac menu bar, App Intents, NSE mirror) renders from it. Contracts:
-   `specs/_build/contracts.md` §4 (construction) → regenerated docs (shipped).
+   construction `contracts.md` §4 (in git history; `specs/_build/` was
+   deleted at end of construction) → regenerated docs (shipped).
 2. **Identity: `MyApp` / `com.example.myapp`** (lang-swift-apple template
    values; valid identifiers; longest-first rename with residual-token lint).
 3. **Architecture gate scope (C8):** NO `scope_globs` (opt-out default scans

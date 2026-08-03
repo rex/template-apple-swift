@@ -38,7 +38,8 @@ documented source — credentials sitting in a dotfile.
    `ps`). `sequential-thinking` is stdio and needs no credential.
    Servers are **never omitted**; a credential-less server degrades in place,
    and Claude Code reports its state to the agent by name. Wrapper text and
-   the verified degradation matrix: `specs/_build/research/R3-mcp.md` §V5.
+   the verified degradation matrix: construction research `R3-mcp.md` §V5
+   (`specs/_build/`, deleted at end of construction — see git history).
    Graceful degradation applies when `op` is absent, locked, or lacks vault
    access — the real distinction is service-account (headless-capable) vs
    desktop-biometric (interactive) auth, not Mac vs container (R3 verified

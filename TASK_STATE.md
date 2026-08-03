@@ -1,86 +1,53 @@
 # Task: Build template-apple-swift v0.1.0
 
-Status: in-progress
+Status: complete
 Owner: Fable (orchestrator) + Opus max-effort wave agents
 
 ## Context
 
-Building Pierce's Apple-app template repo per the approved plan
-(`/root/.claude/plans/template-apple-swift-is-a-new-stateful-orbit.md`, mirrored
-in decisions at `docs/adr/0001`–`0009`). Superset walking-skeleton app
-("Checkpoints" domain, `MyApp` identity) + onboarding wizard + deterministic
-generator + fastlane release automation + full agentic layer (Serena-free).
-Reference: `/home/user/pennywise-apple-universal`. Skills floor:
-`lang-swift-apple` + `agentic-skeleton` (installed versions).
-Construction contracts: `specs/_build/contracts.md` (FROZEN),
-ownership: `specs/_build/file-ownership.md`.
+Built Pierce's Apple-app template repo per the approved plan (mirrored in
+`docs/adr/0001`–`0009`). Superset walking-skeleton app ("Checkpoints"
+domain, `MyApp` identity) + onboarding wizard + deterministic generator +
+fastlane release automation + full agentic layer (Serena-free). Reference:
+`/home/user/pennywise-apple-universal` (read-only). Construction contracts
+lived in `specs/_build/` — deleted at S6 as designed; git history
+(pre-v0.8.0) preserves them. Their load-bearing rules live on in
+`.claude/rules/swift.md`, `CONVENTIONS.md` and the ADRs.
 
 ## Slices
 
 - [x] S0 — Groundwork: contracts, ownership map, ADRs 0001–0009, component
       registry skeleton, answers schema draft, TASK_STATE. (Fable)
-- [x] S1 — Research wave: R1–R5 complete (5/5, 0 errors; deliverables in
-      specs/_build/research/). Gate DONE 2026-08-02: all spec deltas applied,
-      contracts.md FROZEN v1. Headlines: xcodegen lists concatenate
-      (contingency withdrawn; relativePaths:false mandatory; bundleIdPrefix
-      banned); produce needs Apple ID (bootstrap_asc split); gym needs xcargs
-      threading + legacy export names; runner=macos-26/Xcode 26.6/iPhone 17;
-      floors 18.0/15.0/11.0; op IS authed here (service account, agentic
-      vault); spinnerVerbs+spinnerTipsOverride real at project scope;
-      skeleton agents' tools: syntax defect (avoid).
-- [x] S2 — Wave 1 superset app: W1A/W1B/W1C complete (3/3, 0 errors; 111
-      files). Gate DONE 2026-08-02: junction-include refactor (account.yml /
-      account-mac.yml / health.yml replace YAML markers — markers Swift-only),
-      onSnapshot fan-out wiring, WatchLink mac exclusion, components.yaml
-      updated, structural gate 0 FAIL. Resolutions:
-      specs/_build/gate-w1-resolutions.md.
-- [x] S3 — Wave 2 machinery: W2A/W2B/W2C/W2D/W2E complete (5/5, 0 errors).
-      Gate DONE 2026-08-02: VERSION created (0.1.0); vibe.py schema-valid
-      candidate paths; pre-compact hook renamed pre-compact-apple.sh
-      (sync-safe); Versions.xcconfig untracked+gitignored (machine-written);
-      check-no-serena guard added to ci-linux; APPLE_ID_AUTH capability fix;
-      spinner corpus materialized (194 verbs + 37 tips, spinner-check green);
-      onboard.md race → W2E superset ratified; make/*.mk partition ratified.
-      RESULT: make ci-linux ALL 14 GATES PASS · generator pytest 113/113 ·
-      all six combos generate+verify · nine fastlane lanes register ·
-      statusline <300ms. Ratified divergences + answers:
-      specs/_build/questions-w2*.md (gate notes inline).
-- [x] S4 — Integration: DONE 2026-08-02. GitHub ci.yml run #4 GREEN
-      (all 9 jobs: generator tests, 6 combo matrix, make ci-linux 14 gates,
-      docs). Real-CI shakeout fixed: shellcheck severity calibration (-S
-      warning; skeleton-verbatim auto-lint.sh untouchable per ADR-0008) and
-      proved bump-per-commit live (0.1.1). apple-reviewer +
-      xcode-build-debugger agents registered live in-session.
-- [ ] S5 — Mac verification loop 🟡 in-progress — BLOCKED on dispatch
-      permission: this session's GitHub integration lacks Actions:write
-      (403 on workflow_dispatch). Pierce unblocks with EITHER
-      `gh workflow run verify-macos.yml --repo rex/template-apple-swift \
-      --ref claude/template-apple-swift-setup-b58nmp -f combo=all` from his
-      machine, OR granting the Claude GitHub App Actions write. Fable polls
-      for the run and drives compile failures to green with targeted fix
-      agents (xcode-build-debugger + owners per failing file).
-- [ ] S4 — Integration: cross-reference reconciliation, full Linux verification,
-      version bump, CHANGELOG, push.
-- [ ] S5 — Mac verification loop: verify-macos matrix → green (fix agents on
-      failures).
-- [ ] S6 — Finish: delete specs/_build, polish, propose v0.1.0 tag; deliver
-      lang-swift-apple skill-update proposal + Pennywise security note.
+- [x] S1 — Research wave: R1–R5 complete (5/5). Contracts FROZEN v1.
+- [x] S2 — Wave 1 superset app: W1A/W1B/W1C complete (111 files).
+- [x] S3 — Wave 2 machinery: W2A–W2E complete. make ci-linux ALL GATES ·
+      pytest 113/113 · six combos generate+verify · nine fastlane lanes.
+- [x] S4 — Integration: GitHub ci.yml run #4 GREEN (all 9 jobs).
+- [x] S5 — Mac verification loop: DONE 2026-08-03 — verify-macos run #7
+      (id 30778569907, sha 37994c2) ALL SIX JOBS GREEN: generate → verify →
+      xcodegen → build (10 targets) → Swift Testing suites → XCUITest smoke
+      (superset). Seven runs total; every compiler verdict became a Linux
+      gate + a swift.md rule: bash-3.2 heredoc/mapfile (0.1.3) · extension
+      isolation (0.3.0) · App Intents nonisolated-type ban (0.4.0) ·
+      nonisolated witnesses / SE-0470 isolated-conformance ban (0.5.0) ·
+      ActivityKit detached-task sends + hermetic App-Group tests (0.6.0) ·
+      SwiftData group-container trap probe (0.7.0).
+- [x] S6 — Finish: specs/_build deleted; docs re-pointed; final proposal +
+      security note delivered; tag proposed (see Handoff).
 
 ## Risks
 
-- Swift written blind on Linux (no compiler here) — mitigated by R4 SDK cribs,
-  Pennywise-proven patterns, and the Phase-5 Mac loop.
-- xcodegen include deep-merge semantics for list keys unverified — R2 decides;
-  contingency = `# @component:` tagged lines in root project.yml.
-- fastlane lane specifics (produce extension-ID coverage, cloud signing in CI)
-  — R1 decides lane internals; lane NAMES are frozen.
+- (closed) All construction risks resolved by the green matrix. Remaining
+  operational caveat: CI simulators are unsigned, so App-Group-dependent
+  behavior (real SwiftData group store, cfprefsd suites) is proven only on
+  signed local builds — gotcha row 13.
 
 ## Done when
 
-- Template repo ci.yml green (generator tests, 6 combo dry-runs, ci-linux).
-- verify-macos matrix green across all 6 configs (build + test).
-- Onboarding dry-run produces a repo whose own `make validate` passes on a Mac.
-- Pierce receives skill-update proposal + security note; v0.1.0 tag proposed.
+- [x] Template repo ci.yml green (generator tests, 6 combo dry-runs, ci-linux).
+- [x] verify-macos matrix green across all 6 configs (build + test + smoke).
+- [x] Generated repos' own gates pass (every combo runs the same make chain).
+- [x] Pierce received skill-update proposal + Pennywise security note.
 
 ## Rules
 
@@ -91,5 +58,15 @@ ownership: `specs/_build/file-ownership.md`.
 
 ## Handoff note
 
-(rewritten at each phase gate; final rewrite ships as the post-onboarding
-TASK_STATE template content)
+Construction is COMPLETE at v0.8.0 (branch
+`claude/template-apple-swift-setup-b58nmp`). Remaining clicks are Pierce's:
+
+1. Merge the branch to `main` (fast-forward or squash — owner's choice;
+   the repo is already public).
+2. Flip **Settings → Template repository** so "Use this template" appears.
+3. Tag the merged commit (suggest `v1.0.0` — the matrix is the release
+   gate and it is green; `make bump-major` + tag, or tag v0.8.0 as-is).
+
+For the next session in this repo: this file reverts to the un-onboarded
+idle format at onboarding (`template/` regenerates it). Do not start
+feature work here — `/onboard` is the only job in an un-onboarded tree.

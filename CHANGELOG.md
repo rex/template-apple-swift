@@ -35,6 +35,25 @@ version bumps).
 
 ---
 
+## [0.8.0] — 2026-08-03 — Agent: Claude
+
+### Added
+- CONSTRUCTION COMPLETE. verify-macos run #7 (id 30778569907, sha 37994c2):
+  all six combos green end-to-end — generate → verify → xcodegen → build
+  (10 targets) → Swift Testing suites → XCUITest launch smoke (superset).
+  The matrix is the release gate, and it is green.
+
+### Removed
+- `specs/_build/` — construction contracts, research (R1–R5), wave gate
+  notes and handoffs. Deleted at end of construction as designed; git
+  history preserves it. External references re-pointed (template-guide,
+  ADR-0005, ADR-0009, apple-reviewer agent).
+
+### Changed
+- TASK_STATE.md closed out (S0–S6 all complete, handoff note lists the
+  owner's remaining clicks); PROGRESS.md state line records the green
+  matrix.
+
 ## [0.7.0] — 2026-08-03 — Agent: Claude
 
 ### Fixed

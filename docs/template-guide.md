@@ -343,7 +343,9 @@ repo before wondering why GitHub MCP is missing.
 
 - `MAP.md` — the what-breaks-what table.
 - `docs/adr/` — nine decisions with their reasoning.
-- `specs/_build/` — construction-time contracts and research. Deleted before
-  the template is tagged; if you are reading it, construction is still live.
+- `specs/_build/` — construction-time contracts and research. Deleted at the
+  end of construction, as designed; git history (pre-v0.8.0) preserves it.
+  The load-bearing rules it froze live on in `.claude/rules/swift.md`,
+  `CONVENTIONS.md` and the ADRs.
 - `lang-swift-apple` skill references — the deep Swift/Apple material this
   guide deliberately does not duplicate.
