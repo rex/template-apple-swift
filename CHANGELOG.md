@@ -35,6 +35,26 @@ version bumps).
 
 ---
 
+## [0.6.0] — 2026-08-03 — Agent: Claude
+
+### Fixed
+- verify-macos run #5, the two `live-activity` build failures:
+  `LiveActivityController` captured `Activity` references from the main-actor
+  region into fire-and-forget tasks whose `update`/`end` calls hop to the
+  global executor — "sending 'current'/'activity' risks causing data races".
+  All ActivityKit async calls now run in detached tasks that capture only
+  Sendable values and fetch activities inside their own region; the
+  main-actor `current` accessor is gone (`hasActive` is nonisolated).
+- verify-macos run #5, the first-ever test phase (21/23 green): both
+  `WidgetSyncTests` round-trips failed because an unsigned CI simulator
+  build has no App Group container, so cfprefsd denies `group.*` suites.
+  `WidgetSync.write/read` gained a test-only defaults-injection parameter
+  and the tests round-trip through a scratch suite.
+
+### Changed
+- `.claude/rules/swift.md`: gotcha rows 12 (ActivityKit sends — detached
+  tasks only) and 13 (no App Group container on unsigned simulator builds).
+
 ## [0.5.0] — 2026-08-03 — Agent: Claude
 
 ### Fixed

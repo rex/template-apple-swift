@@ -84,6 +84,8 @@ Each of these has cost someone a day. Detail: `docs/template-guide.md`.
 | 9 | Silent pushes are rate-budgeted by iOS and are dropped without warning; user-visible payloads with `mutable-content: 1` handled by the NSE are the reliable path. |
 | 10 | `WCSession` payloads are capped around 65 KB and `updateApplicationContext` keeps only the latest value — send a small summary, never a history. |
 | 11 | `.xcconfig` is the LOWEST layer of Xcode's build-setting precedence. `DEVELOPMENT_TEAM`, `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` live in `Config/*.xcconfig` and nowhere else; the same key in `project.yml` silently wins and the xcconfig looks broken. |
+| 12 | `Activity`'s async methods (`update`, `end`) hop to the global executor. Call them from **detached** tasks that fetch the activity inside their own region; carrying an `Activity` reference out of the main-actor region is a "sending … risks causing data races" compile error. Reading `pushTokenUpdates` never sends the activity and may hold one. |
+| 13 | An unsigned simulator build (`CODE_SIGNING_ALLOWED=NO`, i.e. every CI build) has **no App Group container** — cfprefsd denies `group.*` suites. Tests must round-trip through an injected scratch suite; only signed builds can prove the real container. |
 
 ## Before declaring done
 

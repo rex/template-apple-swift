@@ -50,8 +50,12 @@ public nonisolated enum WidgetSync {
         UserDefaults(suiteName: WidgetAppGroup.suiteName)
     }
 
-    public static func write(_ snapshot: WidgetSnapshot) {
-        guard let defaults else { return }
+    /// `into` exists for tests only: an unsigned simulator build (CI runs with
+    /// `CODE_SIGNING_ALLOWED=NO`) has no App Group container, so cfprefsd
+    /// denies the group suite and a round-trip can never succeed there. Tests
+    /// pass a scratch suite; production callers never pass anything.
+    public static func write(_ snapshot: WidgetSnapshot, into overrideDefaults: UserDefaults? = nil) {
+        guard let defaults = overrideDefaults ?? defaults else { return }
         defaults.set(payloadVersion, forKey: WidgetSyncKey.payloadVersion.rawValue)
         defaults.set(snapshot.sessionStartedAt?.timeIntervalSince1970 ?? 0,
                      forKey: WidgetSyncKey.sessionStartedAt.rawValue)
@@ -62,8 +66,8 @@ public nonisolated enum WidgetSync {
 
     /// `nil` means "nothing written yet, or written by an incompatible build".
     /// Callers render their placeholder rather than inventing a zero state.
-    public static func read() -> WidgetSnapshot? {
-        guard let defaults,
+    public static func read(from overrideDefaults: UserDefaults? = nil) -> WidgetSnapshot? {
+        guard let defaults = overrideDefaults ?? defaults,
               defaults.integer(forKey: WidgetSyncKey.payloadVersion.rawValue) == payloadVersion
         else { return nil }
 

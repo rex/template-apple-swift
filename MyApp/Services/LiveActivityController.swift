@@ -6,6 +6,17 @@ import ActivityKit
 ///
 /// `#if os(iOS)` rather than `#if canImport(ActivityKit)`: the module resolves
 /// on macOS and Mac Catalyst builds where the types are unavailable.
+///
+/// Every ActivityKit call happens inside a DETACHED task on purpose.
+/// `Activity`'s async methods (`update`, `end`) run on the global executor, so
+/// calling one with an `Activity` reference held by the main-actor region is a
+/// `sending` violation under region isolation ("sending 'current' risks
+/// causing data races"). The detached closures capture only Sendable values
+/// (content, dismissal policy) and fetch `Activity` references from
+/// `Activity.activities` inside their own disconnected region, so nothing
+/// non-Sendable ever crosses an isolation boundary. Reading the token stream
+/// is different: it never sends the activity, so `observePushToken` may hold
+/// one.
 @MainActor
 public final class LiveActivityController {
     public static let shared = LiveActivityController()
@@ -19,8 +30,11 @@ public final class LiveActivityController {
 
     private init() {}
 
-    private var current: Activity<SessionActivityAttributes>? {
-        Activity<SessionActivityAttributes>.activities.first
+    /// `nonisolated`: `Activity.activities` is nonisolated static state. A
+    /// main-actor accessor would drag its result into the main-actor region,
+    /// which is exactly what makes the later `update`/`end` calls illegal.
+    private nonisolated static var hasActive: Bool {
+        !Activity<SessionActivityAttributes>.activities.isEmpty
     }
 
     /// The store seam: one idempotent call that starts, updates or ends the
@@ -32,10 +46,10 @@ public final class LiveActivityController {
             return
         }
         let state = SessionActivityAttributes.ContentState(startedAt: startedAt, count: todayCount)
-        if current == nil {
-            start(sessionName: Self.defaultSessionName, state: state)
-        } else {
+        if Self.hasActive {
             update(state)
+        } else {
+            start(sessionName: Self.defaultSessionName, state: state)
         }
     }
 
@@ -47,8 +61,8 @@ public final class LiveActivityController {
     ) -> Bool {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
         let content = ActivityContent(state: state, staleDate: Date().addingTimeInterval(Self.staleAfter))
-        if let current {
-            Task { await current.update(content) }
+        if Self.hasActive {
+            Self.pushUpdate(content)
             return true
         }
         do {
@@ -65,14 +79,26 @@ public final class LiveActivityController {
     }
 
     public func update(_ state: SessionActivityAttributes.ContentState) {
-        guard let current else { return }
         let content = ActivityContent(state: state, staleDate: Date().addingTimeInterval(Self.staleAfter))
-        Task { await current.update(content) }
+        Self.pushUpdate(content)
     }
 
     public func endAll(dismissal: ActivityUIDismissalPolicy = .immediate) {
-        for activity in Activity<SessionActivityAttributes>.activities {
-            Task { await activity.end(nil, dismissalPolicy: dismissal) }
+        Task.detached {
+            for activity in Activity<SessionActivityAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: dismissal)
+            }
+        }
+    }
+
+    /// Fire-and-forget update. The activity is fetched inside the detached
+    /// task and no-ops when none is running, which also makes callers'
+    /// guard-then-update races harmless.
+    private nonisolated static func pushUpdate(
+        _ content: ActivityContent<SessionActivityAttributes.ContentState>
+    ) {
+        Task.detached {
+            await Activity<SessionActivityAttributes>.activities.first?.update(content)
         }
     }
 
