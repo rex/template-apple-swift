@@ -25,9 +25,17 @@
   `@MainActor`, **never** `nonisolated`: a type-level `nonisolated`
   distributes onto `@Parameter`/`@Dependency`, which are mutable stored
   properties — "'nonisolated' cannot be applied to mutable stored
-  properties". Their `static let` metadata still witnesses the nonisolated
-  protocol requirements (immutable + Sendable), and `perform()` is an async
-  requirement, so a main-actor witness is legal. Gate-checked.
+  properties". Gate-checked.
+- Those conformances can also never be **isolated**: `AppIntent` and
+  `AppShortcutsProvider` inherit `Sendable`, so their metatypes are
+  `SendableMetatype` and SE-0470 forbids (and never infers) an isolated
+  conformance — "conformance crosses into main actor-isolated code". So every
+  synchronous witness is explicitly `nonisolated`: a hand-written
+  `nonisolated init() {}` (the synthesized init would be isolated),
+  `nonisolated static let` metadata, and a `nonisolated static var
+  appShortcuts` getter. `perform()` is the only isolated member the
+  conformance tolerates, because that requirement is `async`.
+  `MyApp/Intents/CheckpointIntents.swift` is the canonical shape.
 
 ## Project structure — generated, not hand-edited
 

@@ -1,24 +1,36 @@
 import AppIntents
 import Foundation
 
-// Intent metadata is `static let`, never `static var`: a stored static var is
-// nonisolated global mutable state and Swift 6 rejects it. The types are
-// `@MainActor`, never `nonisolated`: `@Parameter` and `@Dependency` are
-// mutable stored properties, and a type-level `nonisolated` distributes onto
-// them — "'nonisolated' cannot be applied to mutable stored properties". The
-// nonisolated protocol requirements are still satisfied: an immutable
-// Sendable `static let` reads across isolation, and `perform()` is an async
-// requirement, so a main-actor witness is legal.
+// The one file where Swift 6.2-era isolation and a pre-concurrency framework
+// contract collide, adjudicated by real compiler verdicts:
+//
+// - Types are `@MainActor`, never `nonisolated`: a type-level `nonisolated`
+//   distributes onto `@Parameter`/`@Dependency`, which are MUTABLE STORED
+//   properties — "'nonisolated' cannot be applied to mutable stored
+//   properties".
+// - The conformances can never be isolated: `AppIntent` and
+//   `AppShortcutsProvider` inherit `Sendable`, so their metatypes are
+//   `SendableMetatype`, and SE-0470 forbids (and never infers) an isolated
+//   conformance — "conformance … crosses into main actor-isolated code".
+// - Therefore every SYNCHRONOUS witness is explicitly `nonisolated`: the
+//   hand-written `init()` (the synthesized one would be main-actor isolated),
+//   the `static let` metadata (immutable + Sendable, so this is free), and
+//   `appShortcuts`. `perform()` is the single isolated member the conformance
+//   tolerates, because that requirement is `async`.
 
 @MainActor
 struct StartSessionIntent: AppIntent {
-    static let title: LocalizedStringResource = "Start Session"
-    static let description = IntentDescription("Start a MyApp session.")
+    nonisolated static let title: LocalizedStringResource = "Start Session"
+    nonisolated static let description = IntentDescription("Start a MyApp session.")
     // Deprecated at iOS 26 in favour of `supportedModes: IntentModes`; at the
     // iOS 18 floor it is warning-free. Raise the floor, then swap it.
-    static let openAppWhenRun = true
+    nonisolated static let openAppWhenRun = true
 
     @Dependency private var store: CheckpointStore
+
+    /// `AppIntent` requires a synchronous `init()`, and an isolated witness is
+    /// illegal here. The wrapper storage self-initializes, so the body is empty.
+    nonisolated init() {}
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -29,14 +41,16 @@ struct StartSessionIntent: AppIntent {
 
 @MainActor
 struct LogCheckpointIntent: AppIntent {
-    static let title: LocalizedStringResource = "Log Checkpoint"
-    static let description = IntentDescription("Log a checkpoint in the current MyApp session.")
-    static let openAppWhenRun = false
+    nonisolated static let title: LocalizedStringResource = "Log Checkpoint"
+    nonisolated static let description = IntentDescription("Log a checkpoint in the current MyApp session.")
+    nonisolated static let openAppWhenRun = false
 
     @Parameter(title: "Note", requestValueDialog: "What should the note say?")
     var note: String?
 
     @Dependency private var store: CheckpointStore
+
+    nonisolated init() {}
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -48,11 +62,13 @@ struct LogCheckpointIntent: AppIntent {
 
 @MainActor
 struct EndSessionIntent: AppIntent {
-    static let title: LocalizedStringResource = "End Session"
-    static let description = IntentDescription("End the current MyApp session.")
-    static let openAppWhenRun = false
+    nonisolated static let title: LocalizedStringResource = "End Session"
+    nonisolated static let description = IntentDescription("End the current MyApp session.")
+    nonisolated static let openAppWhenRun = false
 
     @Dependency private var store: CheckpointStore
+
+    nonisolated init() {}
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -63,11 +79,12 @@ struct EndSessionIntent: AppIntent {
 
 /// Must live in the app target, not an extension, or the shortcuts never
 /// register. Every phrase carries `\(.applicationName)` — App Intents fails
-/// validation on a phrase without it. `@MainActor` because the builder
-/// constructs the intents above, whose initializers are main-actor isolated.
+/// validation on a phrase without it. The getter is `nonisolated` (the
+/// requirement is synchronous and the conformance cannot be isolated); it
+/// only constructs the intents above through their nonisolated `init()`s.
 @MainActor
 struct MyAppShortcuts: AppShortcutsProvider {
-    static var appShortcuts: [AppShortcut] {
+    nonisolated static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: StartSessionIntent(),
             phrases: [

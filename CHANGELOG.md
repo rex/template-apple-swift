@@ -35,6 +35,26 @@ version bumps).
 
 ---
 
+## [0.5.0] — 2026-08-03 — Agent: Claude
+
+### Fixed
+- verify-macos run #4: `@MainActor` App Intents types still failed —
+  "conformance … crosses into main actor-isolated code" — because `AppIntent`
+  and `AppShortcutsProvider` inherit `Sendable`, so their metatypes are
+  `SendableMetatype` and SE-0470 forbids (and never infers) an isolated
+  conformance. No type-level isolation spelling can fix that; the synchronous
+  witnesses themselves must be nonisolated. Intents now carry an explicit
+  `nonisolated init() {}` (the synthesized init was the isolated witness),
+  `nonisolated static let` metadata, and the provider a `nonisolated static
+  var appShortcuts` getter. `perform()` stays `@MainActor` — legal because
+  that requirement is `async`.
+
+### Changed
+- `.claude/rules/swift.md`: the App Intents bullet now records the full
+  doctrine (never `nonisolated` types — run #3; never isolated conformances —
+  run #4; explicitly nonisolated synchronous witnesses), naming
+  `MyApp/Intents/CheckpointIntents.swift` as the canonical shape.
+
 ## [0.4.0] — 2026-08-03 — Agent: Claude
 
 ### Fixed
