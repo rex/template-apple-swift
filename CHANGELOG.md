@@ -35,6 +35,12 @@ version bumps).
 
 ---
 
+## [0.1.4] — 2026-08-03 — Agent: Claude
+
+### Fixed
+- README + generated-README fragment pointed clones at the wrong GitHub owner
+  (piercemoore/ instead of rex/) — caught by the go-public audit.
+
 ## [0.1.3] — 2026-08-03 — Agent: Claude
 
 ### Fixed

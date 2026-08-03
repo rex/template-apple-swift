@@ -55,7 +55,7 @@ app that will diverge immediately.
 ### 2. Plain clone
 
 ```bash
-git clone https://github.com/piercemoore/template-apple-swift.git MyNewApp
+git clone https://github.com/rex/template-apple-swift.git MyNewApp
 cd MyNewApp
 rm -rf .git && git init          # drop the template's history
 claude
