@@ -73,7 +73,14 @@ fi
 
 # --- Write ------------------------------------------------------------------
 
-new_content="$(cat <<EOF
+# A heredoc NESTED INSIDE $( ) breaks macOS /bin/bash 3.2 — its substitution
+# parser quote-scans the heredoc body, so an apostrophe (or backtick) in a
+# comment reads as an unclosed string: "unexpected EOF looking for `'`".
+# Render to a temp file instead; cmp keeps the write idempotent.
+mkdir -p "$(dirname "$OUT")"
+tmp="$(mktemp "${TMPDIR:-/tmp}/versions.xcconfig.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+cat > "$tmp" <<EOF
 // Version stamp — MACHINE-WRITTEN by scripts/apple/write-versions.sh.
 // Do not hand-edit; edit VERSION instead (ADR-0007).
 //
@@ -89,13 +96,11 @@ new_content="$(cat <<EOF
 MARKETING_VERSION = ${marketing}
 CURRENT_PROJECT_VERSION = ${build}
 EOF
-)"
 
-mkdir -p "$(dirname "$OUT")"
-if [ -f "$OUT" ] && [ "$(cat "$OUT")" = "$new_content" ]; then
+if [ -f "$OUT" ] && cmp -s "$tmp" "$OUT"; then
     echo "Versions.xcconfig unchanged (${marketing} build ${build})"
     exit 0
 fi
 
-printf '%s\n' "$new_content" > "$OUT"
+mv "$tmp" "$OUT"
 echo "Wrote $OUT (MARKETING_VERSION=${marketing} CURRENT_PROJECT_VERSION=${build})"

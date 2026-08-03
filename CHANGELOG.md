@@ -35,6 +35,16 @@ version bumps).
 
 ---
 
+## [0.1.3] — 2026-08-03 — Agent: Claude
+
+### Fixed
+- macOS bash-3.2 compatibility across scripts/apple/: heredocs nested inside
+  command substitution (write-versions, generate-build-info — the parser
+  quote-scans heredoc bodies, so an apostrophe reads as an unclosed string and
+  killed all six verify-macos jobs in under a minute) and `mapfile` (a bash-4
+  builtin) in scan-plist-secrets + both audits, replaced with while-read
+  loops. verify-macos run #1 never reached xcodegen; this unblocks run #2.
+
 ## [0.1.2] — 2026-08-02 — Agent: Claude
 
 ### Changed

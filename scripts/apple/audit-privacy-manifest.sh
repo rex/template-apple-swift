@@ -37,7 +37,9 @@ plist_json() {
     fi
 }
 
-mapfile -t manifests < <(find . -name "PrivacyInfo.xcprivacy" \
+# while-read, not mapfile: macOS /bin/bash is 3.2 and lacks mapfile.
+manifests=()
+while IFS= read -r _m; do manifests+=("$_m"); done < <(find . -name "PrivacyInfo.xcprivacy" \
     -not -path "*/.git/*" -not -path "*/build/*" -not -path "*/DerivedData/*" \
     -not -path "*/Pods/*" -not -path "*/Carthage/*" 2>/dev/null | sort)
 

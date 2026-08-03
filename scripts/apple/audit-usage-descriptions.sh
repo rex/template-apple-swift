@@ -33,7 +33,9 @@ plist_json() {
     fi
 }
 
-mapfile -t plists < <(find . -name "Info.plist" \
+# while-read, not mapfile: macOS /bin/bash is 3.2 and lacks mapfile.
+plists=()
+while IFS= read -r _p; do plists+=("$_p"); done < <(find . -name "Info.plist" \
     -not -path "*/.git/*" -not -path "*/build/*" -not -path "*/DerivedData/*" \
     -not -path "*/Pods/*" -not -path "*/Carthage/*" 2>/dev/null | sort)
 

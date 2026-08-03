@@ -31,7 +31,9 @@ failures=0
 if [ $# -gt 0 ]; then
     files=("$@")
 else
-    mapfile -t files < <(find . -path ./.git -prune -o -path ./build -prune -o \
+    # while-read, not mapfile: macOS /bin/bash is 3.2 and lacks mapfile.
+    files=()
+    while IFS= read -r _f; do files+=("$_f"); done < <(find . -path ./.git -prune -o -path ./build -prune -o \
         -path ./DerivedData -prune -o -type f -print 2>/dev/null | sed 's|^\./||')
 fi
 
