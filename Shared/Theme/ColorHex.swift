@@ -5,7 +5,9 @@
 
 import SwiftUI
 
-extension Color {
+// nonisolated: SWIFT_DEFAULT_ACTOR_ISOLATION=MainActor would otherwise
+// isolate this init, and the nonisolated ColorPalette statics call it.
+nonisolated extension Color {
     /// Initialize from a 24-bit RGB or 32-bit ARGB literal.
     ///
     ///     Color(hex: 0x15141A)      // RGB

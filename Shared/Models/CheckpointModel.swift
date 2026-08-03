@@ -30,6 +30,7 @@ internal nonisolated final class CheckpointRecord {
     }
 }
 
+@MainActor
 extension CheckpointRecord {
     /// The value type is the currency; these two functions are the only place
     /// a persistent model is minted or read.

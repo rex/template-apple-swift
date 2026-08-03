@@ -35,6 +35,20 @@ version bumps).
 
 ---
 
+## [0.3.0] — 2026-08-03 — Agent: Claude
+
+### Fixed
+- First real Swift 6 compile failure (verify-macos run #2): an unannotated
+  `extension Color` in ColorHex.swift became MainActor-isolated under
+  SWIFT_DEFAULT_ACTOR_ISOLATION, unreachable from the nonisolated palette
+  statics (8 errors, every Theme-bearing target). All five first-party
+  extensions in Shared/ now carry explicit `nonisolated`/`@MainActor`.
+
+### Added
+- `checks_swift.extension_isolation`: verify.py now fails any Shared/
+  extension lacking explicit isolation — the gap the self-checks had (types
+  were checked; extensions were not). Rides into every generated repo.
+
 ## [0.2.0] — 2026-08-03 — Agent: Claude
 
 ### Changed

@@ -92,6 +92,7 @@ public final class CheckpointStore {
     }
 }
 
+@MainActor
 extension CheckpointStore {
     /// The persistence every `@main` entry point should use unless it has a
     /// reason not to. The marker block below never names a SwiftData type, so

@@ -20,7 +20,7 @@ public nonisolated struct Checkpoint: Identifiable, Codable, Equatable, Sendable
     }
 }
 
-extension Checkpoint {
+nonisolated extension Checkpoint {
     /// Whether this checkpoint falls on the current calendar day.
     public var isToday: Bool {
         Calendar.current.isDateInToday(timestamp)

@@ -127,7 +127,7 @@ public nonisolated enum Env {
     }
 }
 
-private extension Bool {
+private nonisolated extension Bool {
     /// Liberal coercion so a plist `<true/>`, an `Xcode scheme "1"`, and a CI
     /// `"YES"` all mean the same thing.
     init?(loose raw: String) {

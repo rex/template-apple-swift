@@ -62,6 +62,7 @@ def run(root: Path, manifest: Manifest, ident: Ident, enabled: set[str]) -> Resu
     _includes(res, root, docs, expected_includes)
     _line_caps(res, root)
     checks_swift.forbidden(res, root)
+    checks_swift.extension_isolation(res, root)
     checks_swift.container_background(res, root)
     _source_paths(res, root, docs)
     _plists(res, root)

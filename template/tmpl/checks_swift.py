@@ -63,6 +63,37 @@ def markers(res, root: Path, manifest: Manifest) -> None:
             res.fail(f"marker file {rel} carries undeclared ids {sorted(extra)}")
 
 
+def extension_isolation(res, root: Path) -> None:
+    """Shared/ extensions must declare isolation explicitly.
+
+    SWIFT_DEFAULT_ACTOR_ISOLATION=MainActor silently isolates any extension
+    member that lacks an explicit annotation — an extension of a nonisolated
+    type does NOT inherit that type's isolation. verify-macos run #2 failed on
+    exactly this: an unannotated `extension Color` made `Color(hex:)`
+    MainActor-isolated, which nonisolated ColorPalette statics cannot call.
+    Rule: every `extension` in Shared/ carries `nonisolated` or `@MainActor`
+    (modifier on the extension line, or attribute on the line above).
+    """
+    shared = root / "Shared"
+    if not shared.is_dir():
+        return
+    for sw in sorted(shared.rglob("*.swift")):
+        lines = sw.read_text(encoding="utf-8").splitlines()
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if not re.match(r"^(public |internal |private |fileprivate )?extension\s+\w", stripped):
+                continue
+            has_modifier = "nonisolated" in stripped or "@MainActor" in stripped
+            prev = lines[i - 1].strip() if i > 0 else ""
+            has_attr_above = prev.startswith("@MainActor") or prev.startswith("nonisolated")
+            if not (has_modifier or has_attr_above):
+                res.fail(
+                    f"extension without explicit isolation: "
+                    f"{sw.relative_to(root)}:{i + 1} — add `nonisolated` or `@MainActor` "
+                    f"(SWIFT_DEFAULT_ACTOR_ISOLATION makes the implicit choice wrong)"
+                )
+
+
 def forbidden(res, root: Path) -> None:
     for sw in sorted(root.rglob("*.swift")):
         code = "\n".join(
