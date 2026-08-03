@@ -173,6 +173,10 @@ versioning:
   # Plain semver, one line (ADR-0007). MARKETING_VERSION is derived from it
   # into Config/Versions.xcconfig by CI and by `make bootstrap` — never
   # written into project.yml, where it would silently outrank the xcconfig.
+  #
+  # Bump sizing (standing directive, Pierce 2026-08-03): patch is reserved
+  # for INARGUABLY TRIVIAL doc-only changes. Every other change — fixes,
+  # features, scripts, config, CI — bumps MINOR. When in doubt, minor.
   file: VERSION
   initial: "0.1.0"
   bump_required_per_commit: true

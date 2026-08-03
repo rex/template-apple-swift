@@ -176,7 +176,9 @@ stamp-skill:
 version:
 	@cat VERSION 2>/dev/null || echo "0.1.0 (VERSION file missing)"
 
-## bump-patch: Increment patch (x.y.Z+1) — bug fixes, docs, non-behavior changes
+## bump-patch: Increment patch (x.y.Z+1) — ONLY inarguably trivial doc-only
+## changes (Pierce, 2026-08-03). Everything else — fixes, features, config,
+## scripts, CI — is `bump-minor`. When in doubt, minor.
 bump-patch:
 	@scripts/bump_version.py patch
 

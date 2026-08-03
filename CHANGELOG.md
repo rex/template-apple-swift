@@ -35,6 +35,14 @@ version bumps).
 
 ---
 
+## [0.2.0] — 2026-08-03 — Agent: Claude
+
+### Changed
+- Version-bump policy encoded (VIBE.yaml, CONVENTIONS.md, make help text):
+  patch = inarguably trivial doc-only changes ONLY; everything else = minor.
+  0.2.0 also rebaselines the ledger — 0.1.1 (CI gate fixes) and 0.1.3
+  (bash-3.2 script fixes) warranted minors under this policy.
+
 ## [0.1.4] — 2026-08-03 — Agent: Claude
 
 ### Fixed

@@ -118,3 +118,10 @@ responsibility, not by line count. Enforced by `make check-architecture`.
 - Line limits — `check_architecture.py`.
 - Version bumps — `bump_version.py` / `check_version_bumped.py`.
 - Bundle-ID and App Group shape — `template/verify.py`.
+
+## Version bump sizing (standing directive, 2026-08-03)
+
+`make bump-patch` is reserved for **inarguably trivial doc-only changes**.
+Everything else — fixes, features, scripts, config, CI, generated-content
+changes — is `make bump-minor`. When in doubt, minor. (Majors remain
+human-called.)
