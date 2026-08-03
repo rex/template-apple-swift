@@ -1,0 +1,137 @@
+# verify-macos — compile truth. Manual dispatch only (ADR-0003).
+#
+# Every push is gated on Linux by ci.yml; this is the expensive half, run on
+# demand and ALWAYS before tagging a template version. A green matrix here is
+# the release gate: it proves all six frozen configurations still build after
+# pruning, not just the superset that happens to be committed.
+#
+# How a run resolves its tree:
+#   * a combo whose template/ci-combos/<combo>.yaml exists AND is not the
+#     superset is GENERATED into $RUNNER_TEMP/gen and built there;
+#   * everything else builds the checkout in place. That covers the superset
+#     (which is the committed tree by definition) and a generated repo, where
+#     template/ is gone and the collapsed matrix names the app's own slug.
+#
+# The matrix `combo:` list is a CONTRACT with template/tmpl/workflows.py: the
+# generator collapses it to the single configuration that repo was generated
+# from. Keep it a block list under a key literally named `combo`.
+name: verify-macos
+
+on:
+  workflow_dispatch:
+    inputs:
+      combo:
+        description: 'Which configuration to verify'
+        type: choice
+        default: all
+        options:
+          - all
+          - superset
+          - minimal
+          - ios-widgets-la
+          - ios-watch
+          - universal
+          - no-health
+
+concurrency:
+  group: 'verify-macos-${{ github.ref }}'
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 'build: ${{ matrix.combo }}'
+    runs-on: macos-26
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        combo:
+          - superset
+          - minimal
+          - ios-widgets-la
+          - ios-watch
+          - universal
+          - no-health
+    env:
+      # `matrix` is available to jobs.<id>.env but NOT to jobs.<id>.if, so the
+      # input filter has to be a per-step condition. One place defines it.
+      RUN: "${{ (inputs.combo == 'all' || inputs.combo == matrix.combo) && 'yes' || 'no' }}"
+      LC_ALL: C.UTF-8
+      LANG: C.UTF-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.RUN == 'yes'
+        with:
+          # write-versions.sh derives CURRENT_PROJECT_VERSION from the commit
+          # count, so a shallow clone would stamp a wrong build number.
+          fetch-depth: 0
+
+      # Xcode 26.6 is the pinned floor AND ceiling (contracts §6). A plain
+      # xcode-select beats a third-party action here: nothing to SHA-pin.
+      - name: select Xcode 26.6
+        if: env.RUN == 'yes'
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.6.app
+          xcodebuild -version
+          swift --version
+
+      - name: install xcodegen + xcbeautify
+        if: env.RUN == 'yes'
+        run: brew install xcodegen xcbeautify
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        if: env.RUN == 'yes'
+
+      - name: bundle install
+        if: env.RUN == 'yes'
+        run: bundle install --quiet
+
+      # WORK is where the rest of the job runs: the checkout, or a freshly
+      # generated tree. Everything after this is combo-agnostic.
+      - name: resolve the tree to build
+        if: env.RUN == 'yes'
+        env:
+          COMBO: '${{ matrix.combo }}'
+        run: |
+          set -euo pipefail
+          answers="template/ci-combos/${COMBO}.yaml"
+          if [ "$COMBO" != "superset" ] && [ -f "$answers" ]; then
+            echo "generating '$COMBO' into $RUNNER_TEMP/gen"
+            uv run template/generate.py --answers "$answers" --dest "$RUNNER_TEMP/gen"
+            echo "WORK=$RUNNER_TEMP/gen" >> "$GITHUB_ENV"
+          else
+            echo "building the checkout in place"
+            echo "WORK=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          fi
+
+      - name: make bootstrap
+        if: env.RUN == 'yes'
+        run: make -C "$WORK" bootstrap
+
+      # build-all skips the platforms a combo pruned (no MyAppWatch/, no
+      # MyAppMac/), so one target covers every configuration.
+      - name: make build-all
+        if: env.RUN == 'yes'
+        run: make -C "$WORK" build-all
+
+      - name: make test
+        if: env.RUN == 'yes'
+        run: make -C "$WORK" test
+
+      # UI tests boot a simulator and drive the app: slow, and identical across
+      # combos, so the superset carries them for everyone.
+      - name: make ui-test
+        if: env.RUN == 'yes' && matrix.combo == 'superset'
+        run: make -C "$WORK" ui-test
+
+      - name: upload xcresult bundles
+        if: failure() && env.RUN == 'yes'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: 'xcresult-${{ matrix.combo }}'
+          path: '${{ env.WORK }}/build/results'
+          if-no-files-found: ignore
+          retention-days: 7
