@@ -35,6 +35,25 @@ version bumps).
 
 ---
 
+## [0.7.0] — 2026-08-03 — Agent: Claude
+
+### Fixed
+- verify-macos run #6 (ALL SIX BUILDS GREEN for the first time; minimal
+  fully green through its test phase): the five swiftdata-bearing combos
+  crashed at app launch during `make test` — "Test crashed with signal trap
+  before establishing connection" — because SwiftData TRAPS rather than
+  throws when `groupContainer: .identifier` cannot be resolved, and an
+  unsigned CI simulator build has no App Group container, so the `try?`
+  guards never fired. `makeContainer` now probes
+  `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)` first
+  and throws `StoreUnavailable.appGroupContainerMissing`, flipping CI onto
+  the graceful always-on fallback the design already had.
+
+### Changed
+- `.claude/rules/swift.md` gotcha row 13 extended: the missing-container
+  failure has two faces — silent cfprefsd denial for `group.*` defaults,
+  and a launch-killing SwiftData trap. Probe first, then fall back.
+
 ## [0.6.0] — 2026-08-03 — Agent: Claude
 
 ### Fixed
