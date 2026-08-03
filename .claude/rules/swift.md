@@ -21,6 +21,13 @@
   justifying it, and `nonisolated(unsafe)` needs an ADR.
 - Static members on `AppIntent` / `AppShortcutsProvider` metadata are
   `static let`. Swift 6 rejects mutable stored static vars.
+- App Intents types (`AppIntent` conformers, `AppShortcutsProvider`) are
+  `@MainActor`, **never** `nonisolated`: a type-level `nonisolated`
+  distributes onto `@Parameter`/`@Dependency`, which are mutable stored
+  properties — "'nonisolated' cannot be applied to mutable stored
+  properties". Their `static let` metadata still witnesses the nonisolated
+  protocol requirements (immutable + Sendable), and `perform()` is an async
+  requirement, so a main-actor witness is legal. Gate-checked.
 
 ## Project structure — generated, not hand-edited
 

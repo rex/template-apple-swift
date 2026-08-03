@@ -35,6 +35,25 @@ version bumps).
 
 ---
 
+## [0.4.0] — 2026-08-03 — Agent: Claude
+
+### Fixed
+- verify-macos run #3: the three Checkpoint intents and `MyAppShortcuts` were
+  declared `nonisolated struct`, and a type-level `nonisolated` distributes
+  onto `@Parameter`/`@Dependency` — mutable stored properties, which the
+  compiler rejects ("'nonisolated' cannot be applied to mutable stored
+  properties"). All four App Intents types are now `@MainActor`; their
+  `static let` metadata still witnesses the nonisolated protocol
+  requirements (immutable + Sendable) and `perform()` is an async
+  requirement, so the isolated witness is legal.
+
+### Added
+- FORBIDDEN gate pattern: `nonisolated` on an App Intents type declaration
+  (`AppIntent`, `AppShortcutsProvider`, `WidgetConfigurationIntent`,
+  `ControlConfigurationIntent`) now fails `template/verify.py` on Linux, so
+  this class of compile failure never reaches a macOS runner again.
+- `.claude/rules/swift.md`: concurrency bullet codifying the rule.
+
 ## [0.3.0] — 2026-08-03 — Agent: Claude
 
 ### Fixed

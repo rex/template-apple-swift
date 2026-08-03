@@ -24,6 +24,17 @@ FORBIDDEN = [
     (r"canImport\(ActivityKit\)", "canImport(ActivityKit) guard"),
     (r"[Pp]ennywise", "Pennywise residue"),
     (r"(?i)influx", "influx residue"),
+    # Type-level `nonisolated` distributes onto every member, and @Parameter /
+    # @Dependency are MUTABLE STORED properties — the compiler rejects
+    # "'nonisolated' applied to mutable stored properties" (verify-macos run
+    # #3). AppShortcutsProvider is included because its builder constructs
+    # those @MainActor intents. App Intents types are always @MainActor.
+    (
+        r"nonisolated\s+(?:(?:public|internal|private|fileprivate|final)\s+)*"
+        r"(?:struct|class|enum)\s+\w+\s*:[^\n{]*"
+        r"\b(?:AppIntent|AppShortcutsProvider|WidgetConfigurationIntent|ControlConfigurationIntent)\b",
+        "nonisolated App Intents type (must be @MainActor)",
+    ),
 ]
 
 # Lock-screen Live Activity presentations use activityBackgroundTint, so
